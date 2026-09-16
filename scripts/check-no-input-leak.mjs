@@ -10,7 +10,7 @@ const reviewedBoundaries = {
   'lib/analytics/events.ts': 'feeddad750e057560672b91c6098644ab97640911e7a23bd6c17e6ada962c3a7',
   'components/analytics/GoogleAnalytics.tsx': '11c6791d9fa33cff843138e8432da74f260806efddd9ac6982d7225813499167',
 };
-const prohibited = new Set(['URLSearchParams', 'localStorage', 'sessionStorage', 'fetch', 'sendBeacon', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'indexedDB']);
+const prohibited = new Set(['URLSearchParams', 'localStorage', 'sessionStorage', 'fetch', 'sendBeacon', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'indexedDB', 'pushState', 'replaceState', 'FormData']);
 const events = new Set(['calculator_view', 'calculator_start', 'calculator_submit', 'calculator_result', 'calculator_reset', 'related_calculator_click', 'share']);
 const optionValues = { source: new Set(['copy_result', 'copy_link', 'related']), result_type: new Set(['success', 'error']) };
 
@@ -23,10 +23,26 @@ export function scanSource(file, source) {
     return errors;
   }
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  function accessPath(node) {
+    if (ts.isIdentifier(node)) return [node.text];
+    if (ts.isPropertyAccessExpression(node)) return [...accessPath(node.expression), node.name.text];
+    if (ts.isElementAccessExpression(node)) return [...accessPath(node.expression), ts.isStringLiteral(node.argumentExpression) ? node.argumentExpression.text : '*'];
+    return [];
+  }
   function visit(node) {
     if (ts.isStringLiteral(node) && node.text === 'use server') errors.push(`${file}: server actions are forbidden`);
     if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && prohibited.has(node.text)) errors.push(`${file}: prohibited ${node.text}`);
-    if (ts.isPropertyAccessExpression(node) && /(?:^|\.)location$/.test(node.expression.getText(ast)) && ['search', 'hash', 'href'].includes(node.name.text)) errors.push(`${file}: full URL/query access is forbidden`);
+    if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+      const path = accessPath(node);
+      if (path.includes('location') && path.at(-1) !== 'location' && !['origin', 'pathname'].includes(path.at(-1))) errors.push(`${file}: full URL/query access or navigation is forbidden`);
+    }
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment && accessPath(node.left).includes('location')) errors.push(`${file}: location writes are forbidden`);
+    if (ts.isCallExpression(node) && (ts.isPropertyAccessExpression(node.expression) || ts.isElementAccessExpression(node.expression)) && ['submit', 'requestSubmit'].includes(accessPath(node.expression).at(-1))) errors.push(`${file}: native form submission is forbidden`);
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === 'form') {
+      const attributes = node.attributes.properties;
+      const names = attributes.filter(ts.isJsxAttribute).map((attribute) => attribute.name.getText(ast));
+      if (!names.includes('onSubmit') || names.includes('action') || names.includes('method') || attributes.some(ts.isJsxSpreadAttribute)) errors.push(`${file}: native form serialization is forbidden; use the guarded local submit handler`);
+    }
     if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && ['gtag', 'dataLayer'].includes(node.text)) errors.push(`${file}: direct analytics access outside reviewed boundary`);
     if (ts.isCallExpression(node) && node.expression.getText(ast) === 'trackCalculatorEvent') {
       const [event, slug, options] = node.arguments;

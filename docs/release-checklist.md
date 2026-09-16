@@ -8,10 +8,10 @@
 - [ ] `pnpm lint`, `pnpm check:catalog`, `pnpm check:privacy`, `pnpm test`가 모두 통과한다.
 - [ ] `NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build` 후 `pnpm check:static`이 통과한다.
 - [ ] `out/`에는 계산기 9개, 정책 5개, 홈 HTML, 404, robots.txt, sitemap.xml, favicon/OG 및 참조된 JS/CSS가 있다. API·서버 실행 파일은 없다.
-- [ ] 15개 주소의 canonical·WebPage JSON-LD·사이트맵은 `https://calc.bongworks.co.kr`과 일치하며 입력 쿼리·noindex·중복 경로가 없다.
+- [ ] 15개 주소의 canonical·WebPage JSON-LD·사이트맵은 `https://calc.bongworks.co.kr`과 일치하며 입력 쿼리·noindex·중복 경로가 없다. `none` 및 Googlebot/Bingbot/Naverbot/Yeti별 noindex도 없어야 한다. robots의 봇 그룹·부분 경로·와일드카드·Allow 우선순위를 적용했을 때 모든 공개 경로를 크롤링할 수 있어야 한다.
 - [ ] 계산기마다 독립적인 계산표/신뢰 가능한 예시와 결과·단위·반올림·한계를 사람이 교차 검토하고 출처 및 검토일을 승인한다. 자동 테스트만으로 공식 검토를 대체하지 않는다.
 
-`check:privacy`는 앱·컴포넌트·계산기/분석 도우미 전체를 검사한다. URL 쿼리/해시·저장소·네트워크 수집 경로와 직접 GA 호출을 거부하며 이벤트 옵션은 허용된 상수만 받는다. 두 분석 경계 파일은 검토된 SHA-256과 일치해야 한다. 변경 시 단순히 해시만 바꾸지 말고 payload 허용 목록 및 아래 합성 브라우저 검증을 먼저 검토한다. 정적 검사는 일반적인 우회 경로를 무한히 증명하는 보안 도구가 아니므로 코드 리뷰와 런타임 확인도 필요하다.
+`check:privacy`는 앱·컴포넌트·계산기/분석 도우미 전체를 검사한다. URL 쿼리/해시·저장소·네트워크 수집 경로와 직접 GA 호출을 거부하며 이벤트 옵션은 허용된 상수만 받는다. `history.pushState/replaceState`, 브래킷 형태의 location 접근/쓰기, FormData와 네이티브 폼 submit/requestSubmit, JSX form의 method/action 또는 submit 핸들러 누락도 탐지한다. 기존 로컬 폼의 hydration 전 비활성화와 preventDefault 동작은 컴포넌트/E2E 테스트로 검증한다. 정적 앵커와 origin/pathname 읽기는 허용한다. 두 분석 경계 파일은 검토된 SHA-256과 일치해야 한다. 변경 시 단순히 해시만 바꾸지 말고 payload 허용 목록 및 아래 합성 브라우저 검증을 먼저 검토한다. 정적 검사는 일반적인 우회 경로를 무한히 증명하는 보안 도구가 아니므로 코드 리뷰와 런타임 확인도 필요하다.
 
 ## 사용자 흐름·접근성·성능
 

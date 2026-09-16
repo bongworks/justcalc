@@ -6,6 +6,50 @@ import { JSDOM } from 'jsdom';
 import { calculators } from '../content/calculators.ts';
 import { homePage, policyPages, productionOrigin } from '../lib/seo/site.ts';
 
+function robotsAllowCanonicalPaths(robots, paths) {
+  const groups = [];
+  let group;
+  for (const line of robots.split(/\r?\n/)) {
+    const match = line.replace(/#.*/, '').match(/^\s*([\w-]+)\s*:\s*(.*?)\s*$/);
+    if (!match) continue;
+    const [, field, value] = match;
+    const key = field.toLowerCase();
+    if (key === 'user-agent') {
+      if (!group || group.seenRule) {
+        group = { agents: [], rules: [], seenRule: false };
+        groups.push(group);
+      }
+      group.agents.push(value.toLowerCase());
+    } else if (key === 'allow' || key === 'disallow') {
+      if (!group) {
+        group = { agents: ['*'], rules: [], seenRule: false };
+        groups.push(group);
+      }
+      group.seenRule = true;
+      if (!value) continue;
+      const anchored = value.endsWith('$');
+      const pattern = anchored ? value.slice(0, -1) : value;
+      const expression = pattern.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
+      group.rules.push({ allow: key === 'allow', length: pattern.replaceAll('*', '').length, matches: new RegExp(`^${expression}${anchored ? '$' : ''}`) });
+    }
+  }
+  // Also check explicitly declared agents so a bot-specific exclusion cannot hide
+  // behind an unrestricted wildcard group. More-specific Allow wins matching ties.
+  const agents = new Set(['*', 'googlebot', 'bingbot', 'naverbot', 'yeti', ...groups.flatMap((entry) => entry.agents)]);
+  for (const agent of agents) {
+    const ranks = groups.map((entry) => Math.max(-1, ...entry.agents.map((name) => name === '*' ? 0 : agent.startsWith(name) ? name.length : -1)));
+    const rank = Math.max(-1, ...ranks);
+    if (rank < 0) continue;
+    const rules = groups.filter((_, index) => ranks[index] === rank).flatMap((entry) => entry.rules);
+    for (const path of paths) {
+      const matching = rules.filter((rule) => rule.matches.test(path));
+      const longest = Math.max(-1, ...matching.map((rule) => rule.length));
+      if (longest >= 0 && !matching.some((rule) => rule.length === longest && rule.allow)) return false;
+    }
+  }
+  return true;
+}
+
 export function validateStaticPage(html, page, gaEnabled) {
   const errors = [];
   const doc = new JSDOM(html).window.document;
@@ -13,7 +57,10 @@ export function validateStaticPage(html, page, gaEnabled) {
   const canonical = productionOrigin + page.route;
   const links = doc.querySelectorAll('link[rel="canonical"]');
   if (links.length !== 1 || links[0].getAttribute('href') !== canonical) fail(`canonical must equal ${canonical}`);
-  if ([...doc.querySelectorAll('meta[name="robots"]')].some((meta) => /noindex/i.test(meta.content))) fail('noindex is forbidden');
+  if ([...doc.querySelectorAll('meta[name]')].some((meta) =>
+    /^(?:robots|googlebot(?:-.*)?|bingbot|naverbot|yeti)$/i.test(meta.name.trim()) &&
+    meta.content.toLowerCase().split(/[\s,;]+/).some((directive) => ['noindex', 'none'].includes(directive))
+  )) fail('noindex is forbidden');
   if (!doc.title || !doc.querySelector('meta[name="description"]')?.content || !doc.querySelector('h1')) fail('title, description and rendered h1 are required');
   const data = [...doc.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
     try { const item = JSON.parse(script.textContent); return Array.isArray(item) ? item : [item]; } catch { fail('invalid JSON-LD'); return []; }
@@ -59,7 +106,7 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false)
   }
   if (existsSync(resolve(directory, 'robots.txt'))) {
     const robots = readFileSync(resolve(directory, 'robots.txt'), 'utf8');
-    if (!robots.includes(`Sitemap: ${productionOrigin}/sitemap.xml`) || /^Disallow:\s*\/$/m.test(robots)) errors.push('robots must allow indexing and reference canonical sitemap');
+    if (!robots.includes(`Sitemap: ${productionOrigin}/sitemap.xml`) || !robotsAllowCanonicalPaths(robots, pages.map(({ route }) => route))) errors.push('robots must allow indexing and reference canonical sitemap');
   }
   for (const category of ['car', 'finance', 'life']) {
     const folder = resolve(directory, category);
