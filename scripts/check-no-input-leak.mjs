@@ -4,11 +4,11 @@ import { resolve, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
-// These two reviewed boundaries map catalog metadata / validated enums to GA.
+// Reviewed boundaries map catalog metadata / enums and four bounded UTM codes to GA.
 // Changes fail closed: review payloads and browser tests before updating a hash.
 const reviewedBoundaries = {
   'lib/analytics/events.ts': 'feeddad750e057560672b91c6098644ab97640911e7a23bd6c17e6ada962c3a7',
-  'components/analytics/GoogleAnalytics.tsx': '11c6791d9fa33cff843138e8432da74f260806efddd9ac6982d7225813499167',
+  'components/analytics/GoogleAnalytics.tsx': 'ef091b40aaf6d6d19bb77348f41b561d41f8d752edac6f7a64474490ebc15ccf',
 };
 const prohibited = new Set(['URLSearchParams', 'localStorage', 'sessionStorage', 'fetch', 'sendBeacon', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'indexedDB', 'pushState', 'replaceState', 'FormData']);
 const events = new Set(['calculator_view', 'calculator_start', 'calculator_submit', 'calculator_result', 'calculator_reset', 'related_calculator_click', 'share']);

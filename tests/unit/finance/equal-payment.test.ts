@@ -3,6 +3,24 @@ import { describe, expect, it } from 'vitest';
 import { calculateEqualPaymentLoan } from '@/lib/finance/loan';
 
 describe('calculateEqualPaymentLoan', () => {
+  it.each(['50', '100'])('preserves annuity payments at %s percent for 1200 months without a balloon', (rate) => {
+    const Oracle = Decimal.clone({ precision: 160 });
+    const principal = new Oracle('12000000');
+    const monthlyRate = new Oracle(rate).div(1200);
+    // Independent present-value formula (discount factor, not engine growth factor).
+    const expected = principal.mul(monthlyRate).div(new Oracle(1).minus(new Oracle(1).add(monthlyRate).pow(-1200)));
+    const originalPrecision = Decimal.precision;
+    const result = calculateEqualPaymentLoan({ principal: new Decimal(principal), annualRatePercent: new Decimal(rate), months: 1200 });
+    expect(Decimal.precision).toBe(originalPrecision);
+    for (const row of result.rows) {
+      expect(new Oracle(row.payment).minus(expected).abs().lt('1e-40')).toBe(true);
+      expect(row.principal.gte(0)).toBe(true);
+    }
+    expect(new Oracle(result.totalInterest).minus(expected.mul(1200).minus(principal)).abs().lt('1e-40')).toBe(true);
+    expect(result.rows.reduce((sum, row) => sum.add(row.principal), result.principal.mul(0)).eq(principal)).toBe(true);
+    expect(result.rows.at(-1)?.balance.isZero()).toBe(true);
+    if (rate === '50') expect(result.totalInterest.toFixed(6)).toBe('588000000.000000');
+  });
   it('returns a complete schedule whose principal is fully repaid', () => {
     const result = calculateEqualPaymentLoan({
       principal: new Decimal('12000000'),
@@ -38,11 +56,11 @@ describe('calculateEqualPaymentLoan', () => {
     });
     const scheduledPrincipal = result.rows.reduce(
       (sum, row) => sum.add(row.principal),
-      new Decimal(0),
+      result.principal.mul(0),
     );
     const scheduledPayments = result.rows.reduce(
       (sum, row) => sum.add(row.payment),
-      new Decimal(0),
+      result.principal.mul(0),
     );
 
     expect(scheduledPrincipal.eq(result.principal)).toBe(true);

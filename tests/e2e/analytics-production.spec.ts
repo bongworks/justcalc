@@ -47,6 +47,18 @@ test('header home navigation creates one fresh query-free homepage view', async 
   expect(JSON.stringify(commands)).not.toMatch(/987654|income|private|secret|fuel-cost/);
 });
 
+test('approved UTM fields provide campaign attribution without forwarding other query data', async ({ page }) => {
+  await page.goto('/car/fuel-cost/?utm_source=naver&utm_medium=cpc&utm_campaign=autumn-2026&utm_content=card_a&income=987654321&email=private@example.com&gclid=secret#hidden');
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(1);
+  const commands = await page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)));
+  const config = commands.find(([type]) => type === 'config')?.[2];
+  expect(config).toMatchObject({ campaign_source: 'naver', campaign_medium: 'cpc', campaign_name: 'autumn-2026', campaign_content: 'card_a', page_location: 'https://calc.bongworks.co.kr/car/fuel-cost/' });
+  expect(JSON.stringify(commands)).not.toMatch(/987654321|income|email|private|secret|hidden|utm_/);
+  await page.goto('/car/fuel-cost/?utm_source=private%40example.com&utm_medium=123456789&utm_campaign=' + 'x'.repeat(65) + '&utm_content=hello%20world');
+  const invalidConfig = await page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)).find(([type]) => type === 'config')?.[2] as Record<string, unknown>);
+  expect(Object.keys(invalidConfig).filter((key) => key.startsWith('campaign_'))).toEqual([]);
+});
+
 test('calculation and sharing events contain only approved metadata and no input or result values', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } });

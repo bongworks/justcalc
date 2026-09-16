@@ -10,6 +10,8 @@ test('every calculator has static canonical, social metadata and matching struct
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', origin + calculator.route);
     await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', origin + calculator.route);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', origin + '/og-default.png');
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', origin + '/og-default.png');
     await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute('content', calculator.title);
     await expect(page.getByText('마지막 검토일:')).toBeVisible();
     const json = (await page.locator('script[type="application/ld+json"]').allTextContents()).join('');

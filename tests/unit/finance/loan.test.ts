@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { calculateRepaymentPlans, calculateSimpleInterest } from '@/lib/finance/loan';
 
 describe('calculateRepaymentPlans', () => {
+  it('matches independent equal-principal and bullet totals at 50 percent for 1200 months', () => {
+    const plans = calculateRepaymentPlans({ principal: new Decimal('12000000'), annualRatePercent: new Decimal(50), months: 1200 });
+    // Equal principal: 500000 * (1200 + 1) / 2. Bullet: 500000 * 1200.
+    expect(plans.equalPrincipal.totalInterest.minus('300250000').abs().lt('1e-40')).toBe(true);
+    expect(plans.bullet.totalInterest.minus('600000000').abs().lt('1e-40')).toBe(true);
+  });
   it.each([
     ['12000000', '6', 12],
     ['20000000', '6', 60],
@@ -10,6 +16,7 @@ describe('calculateRepaymentPlans', () => {
     ['12345678.91', '4.37', 360],
     ['1200', '6', 1],
     ['0', '6', 12],
+    ['12000000', '50', 1200],
   ])('reconciles every schedule for %s at %s percent over %s months', (amount, rate, months) => {
     const principal = new Decimal(amount);
     const plans = calculateRepaymentPlans({ principal, annualRatePercent: new Decimal(rate), months });
@@ -17,9 +24,11 @@ describe('calculateRepaymentPlans', () => {
     for (const plan of [plans.equalPayment, plans.equalPrincipal, plans.bullet]) {
       expect(plan.rows).toHaveLength(months);
       expect(plan.rows.at(-1)?.balance.toString()).toBe('0');
-      expect(plan.rows.reduce((sum, row) => sum.add(row.principal), new Decimal(0)).eq(principal)).toBe(true);
-      expect(plan.rows.reduce((sum, row) => sum.add(row.payment), new Decimal(0)).eq(plan.totalPaid)).toBe(true);
-      expect(plan.totalPaid.eq(principal.add(plan.totalInterest))).toBe(true);
+      // Sum in the returned schedule's precision context, without down-rounding
+      // every row through the unrelated default Decimal constructor.
+      expect(plan.rows.reduce((sum, row) => sum.add(row.principal), plan.totalPaid.mul(0)).eq(principal)).toBe(true);
+      expect(plan.rows.reduce((sum, row) => sum.add(row.payment), plan.totalPaid.mul(0)).eq(plan.totalPaid)).toBe(true);
+      expect(plan.totalPaid.eq(plan.totalInterest.add(principal))).toBe(true);
       for (const row of plan.rows) {
         expect(row.payment.eq(row.principal.add(row.interest))).toBe(true);
         expect(row.balance.gte(0)).toBe(true);

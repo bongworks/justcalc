@@ -57,6 +57,10 @@ export function validateStaticPage(html, page, gaEnabled) {
   const canonical = productionOrigin + page.route;
   const links = doc.querySelectorAll('link[rel="canonical"]');
   if (links.length !== 1 || links[0].getAttribute('href') !== canonical) fail(`canonical must equal ${canonical}`);
+  for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {
+    const images = doc.querySelectorAll(selector);
+    if (images.length !== 1 || images[0].getAttribute('content') !== productionOrigin + '/og-default.png') fail('canonical social image is required');
+  }
   if ([...doc.querySelectorAll('meta[name]')].some((meta) =>
     /^(?:robots|googlebot(?:-.*)?|bingbot|naverbot|yeti)$/i.test(meta.name.trim()) &&
     meta.content.toLowerCase().split(/[\s,;]+/).some((directive) => ['noindex', 'none'].includes(directive))

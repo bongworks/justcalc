@@ -30,12 +30,13 @@ export function getVerification(google = process.env.GOOGLE_SITE_VERIFICATION, n
 
 export function pageMetadata(page: { title: string; description: string; route: string }): Metadata {
   const url = getSiteOrigin() + page.route;
+  const images = [getSiteOrigin() + '/og-default.png'];
   return {
     title: page.title,
     description: page.description,
     alternates: { canonical: url },
-    openGraph: { title: page.title, description: page.description, url, siteName, locale: 'ko_KR', type: 'website' },
-    twitter: { card: 'summary', title: page.title, description: page.description },
+    openGraph: { title: page.title, description: page.description, url, siteName, locale: 'ko_KR', type: 'website', images },
+    twitter: { card: 'summary', title: page.title, description: page.description, images },
   };
 }
 

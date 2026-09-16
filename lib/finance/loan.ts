@@ -1,5 +1,13 @@
 import Decimal from 'decimal.js';
 
+// At the UI bound (100% / 1200 months), annuity growth consumes about 42
+// significant digits. Keep ample guard digits without changing global Decimal.
+const FinanceDecimal = Decimal.clone({ precision: 100 });
+
+function financeInput(input: EqualPaymentLoanInput): EqualPaymentLoanInput {
+  return { ...input, principal: new FinanceDecimal(input.principal), annualRatePercent: new FinanceDecimal(input.annualRatePercent) };
+}
+
 export interface EqualPaymentLoanInput {
   principal: Decimal;
   annualRatePercent: Decimal;
@@ -66,13 +74,14 @@ export interface RepaymentPlansResult {
 }
 
 export function calculateRepaymentPlans(input: EqualPaymentLoanInput): RepaymentPlansResult {
+  input = financeInput(input);
   const equalPayment = calculateEqualPaymentLoan(input);
   const monthlyRate = input.annualRatePercent.div(100).div(12);
   const monthlyPrincipal = input.principal.div(input.months);
   const monthlyInterestPayment = input.principal.mul(monthlyRate);
   const equalPrincipalRows: RepaymentRow[] = [];
   const bulletRows: RepaymentRow[] = [];
-  let repaidPrincipal = new Decimal(0);
+  let repaidPrincipal = new FinanceDecimal(0);
   let balance = input.principal;
 
   for (let month = 1; month <= input.months; month += 1) {
@@ -80,21 +89,21 @@ export function calculateRepaymentPlans(input: EqualPaymentLoanInput): Repayment
     const interest = balance.mul(monthlyRate);
     const principal = isFinal ? input.principal.minus(repaidPrincipal) : monthlyPrincipal;
     repaidPrincipal = repaidPrincipal.add(principal);
-    balance = isFinal ? new Decimal(0) : input.principal.minus(repaidPrincipal);
+    balance = isFinal ? new FinanceDecimal(0) : input.principal.minus(repaidPrincipal);
     equalPrincipalRows.push({ month, principal, interest, payment: principal.add(interest), balance });
 
-    const bulletPrincipal = isFinal ? input.principal : new Decimal(0);
+    const bulletPrincipal = isFinal ? input.principal : new FinanceDecimal(0);
     bulletRows.push({
       month,
       principal: bulletPrincipal,
       interest: monthlyInterestPayment,
       payment: bulletPrincipal.add(monthlyInterestPayment),
-      balance: isFinal ? new Decimal(0) : input.principal,
+      balance: isFinal ? new FinanceDecimal(0) : input.principal,
     });
   }
 
-  const equalPrincipalTotalPaid = equalPrincipalRows.reduce((total, row) => total.add(row.payment), new Decimal(0));
-  const bulletTotalPaid = bulletRows.reduce((total, row) => total.add(row.payment), new Decimal(0));
+  const equalPrincipalTotalPaid = equalPrincipalRows.reduce((total, row) => total.add(row.payment), new FinanceDecimal(0));
+  const bulletTotalPaid = bulletRows.reduce((total, row) => total.add(row.payment), new FinanceDecimal(0));
 
   return {
     equalPayment,
@@ -116,6 +125,7 @@ export function calculateRepaymentPlans(input: EqualPaymentLoanInput): Repayment
 }
 
 export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPaymentLoanResult {
+  input = financeInput(input);
   if (input.months <= 0 || !new Decimal(input.months).isInteger()) {
     throw new Error('상환 기간은 0보다 큰 정수여야 합니다.');
   }
@@ -126,7 +136,7 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
   if (monthlyRate.isZero()) {
     monthlyPayment = input.principal.div(input.months);
   } else {
-    const growthFactor = new Decimal(1).add(monthlyRate).pow(input.months);
+    const growthFactor = new FinanceDecimal(1).add(monthlyRate).pow(input.months);
     const denominator = growthFactor.minus(1);
 
     if (denominator.lte(0)) {
@@ -138,7 +148,7 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
 
   const rows: RepaymentRow[] = [];
   let balance = input.principal;
-  let repaidPrincipal = new Decimal(0);
+  let repaidPrincipal = new FinanceDecimal(0);
 
   for (let month = 1; month <= input.months; month += 1) {
     const interest = balance.mul(monthlyRate);
@@ -150,13 +160,13 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
     const payment = principal.add(interest);
     repaidPrincipal = repaidPrincipal.add(principal);
     balance =
-      month === input.months ? new Decimal(0) : input.principal.minus(repaidPrincipal);
+      month === input.months ? new FinanceDecimal(0) : input.principal.minus(repaidPrincipal);
     rows.push({ month, payment, principal, interest, balance });
   }
 
   const totalPaid = rows.reduce(
     (total, row) => total.add(row.payment),
-    new Decimal(0),
+    new FinanceDecimal(0),
   );
 
   return {

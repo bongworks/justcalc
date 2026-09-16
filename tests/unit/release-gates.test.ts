@@ -62,7 +62,7 @@ describe('privacy source gate', () => {
 
 const page = { route: '/car/fuel-cost/', title: '유류비·연비 계산기' };
 const origin = 'https://calc.bongworks.co.kr';
-const html = `<html lang="ko"><head><title>${page.title}</title><meta name="description" content="계산 안내"><link rel="canonical" href="${origin}${page.route}"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","url":"${origin}${page.route}"}</script></head><body><h1>${page.title}</h1></body></html>`;
+const html = `<html lang="ko"><head><title>${page.title}</title><meta name="description" content="계산 안내"><meta property="og:image" content="${origin}/og-default.png"><meta name="twitter:image" content="${origin}/og-default.png"><link rel="canonical" href="${origin}${page.route}"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","url":"${origin}${page.route}"}</script></head><body><h1>${page.title}</h1></body></html>`;
 
 describe('static output gate', () => {
   const fixtures: string[] = [];
@@ -75,6 +75,10 @@ describe('static output gate', () => {
   });
   it('rejects GA script in a release without a measurement ID', () => {
     expect(validateStaticPage(html.replace('</head>', '<script id="ga-bootstrap">window.gtag()</script></head>'), page, false)).toContain(`${page.route}: GA must be absent without a measurement ID`);
+  });
+  it('rejects missing or input-bearing social image metadata', () => {
+    expect(validateStaticPage(html.replace('property="og:image"', 'property="og:other"'), page, false)).toContain(`${page.route}: canonical social image is required`);
+    expect(validateStaticPage(html.replaceAll('/og-default.png', '/og-default.png?income=private'), page, false)).toContain(`${page.route}: canonical social image is required`);
   });
   it.each([
     ['robots', 'none'],
