@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root { --canvas: #f7f7f5; --surface: #fff; --ink: #17201c; --muted: #52605a; --accent: #126e47; --line: #d6ddd8; }
+* { box-sizing: border-box; }
+html { background: var(--canvas); }
+body { min-width: 320px; margin: 0; color: var(--ink); background: var(--canvas); font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 16px; line-height: 1.6; }
+a { color: var(--accent); }
+a:focus-visible { outline: 3px solid #e17716; outline-offset: 3px; }
+.skip-link { position: absolute; z-index: 1; top: 0; left: 1rem; padding: .75rem 1rem; color: #fff; background: var(--ink); transform: translateY(-120%); }
+.skip-link:focus { transform: translateY(0); }
+.site-header, .site-footer { padding: 1rem clamp(1.25rem, 4vw, 4rem); }
+.site-header { border-bottom: 1px solid var(--line); background: var(--surface); font-size: 1.125rem; font-weight: 800; }
+.site-header a { color: var(--ink); text-decoration: none; }
+.site-footer { color: var(--muted); border-top: 1px solid var(--line); }
+.page-shell { width: min(100% - 2.5rem, 72rem); margin: 0 auto; padding: clamp(3rem, 8vw, 6.5rem) 0; }
+.hero { max-width: 52rem; margin-bottom: 4rem; }
+.eyebrow { margin: 0 0 .75rem; color: var(--accent); font-weight: 800; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { max-width: 19ch; margin-bottom: 1.25rem; font-size: clamp(2.25rem, 6vw, 4.5rem); line-height: 1.15; letter-spacing: -.04em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.hero > p:last-child, .category-card p { color: var(--muted); }
+.category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.category-card { min-height: 100%; padding: 1.5rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); }
+.category-card h3 { margin-bottom: .5rem; font-size: 1.25rem; }
+.category-card ul { margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.category-card li + li { margin-top: .5rem; }
+.category-card a { display: inline-flex; align-items: center; min-height: 2.75rem; font-weight: 700; }
+.category-card a:hover { text-decoration-thickness: 2px; }
+@media (max-width: 48rem) { .category-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
