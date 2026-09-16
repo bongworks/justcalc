@@ -30,6 +30,26 @@ describe('calculateEqualPaymentLoan', () => {
     expect(result.rows.at(-1)?.balance.toString()).toBe('0');
   });
 
+  it('reconciles 60-month schedule totals to the original principal and reported payment', () => {
+    const result = calculateEqualPaymentLoan({
+      principal: new Decimal('20000000'),
+      annualRatePercent: new Decimal('6'),
+      months: 60,
+    });
+    const scheduledPrincipal = result.rows.reduce(
+      (sum, row) => sum.add(row.principal),
+      new Decimal(0),
+    );
+    const scheduledPayments = result.rows.reduce(
+      (sum, row) => sum.add(row.payment),
+      new Decimal(0),
+    );
+
+    expect(scheduledPrincipal.eq(result.principal)).toBe(true);
+    expect(result.totalPaid.eq(scheduledPayments)).toBe(true);
+    expect(result.rows.at(-1)?.balance.toString()).toBe('0');
+  });
+
   it('reports a non-positive equal-payment denominator', () => {
     expect(() =>
       calculateEqualPaymentLoan({

@@ -45,23 +45,32 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
 
   const rows: RepaymentRow[] = [];
   let balance = input.principal;
-  let totalInterest = new Decimal(0);
+  let repaidPrincipal = new Decimal(0);
 
   for (let month = 1; month <= input.months; month += 1) {
     const interest = balance.mul(monthlyRate);
-    // The final row consumes the exact balance so Decimal precision cannot leave a residual.
-    const principal = month === input.months ? balance : monthlyPayment.minus(interest);
+    // Reconcile against the original principal so repeated Decimal operations cannot accumulate drift.
+    const principal =
+      month === input.months
+        ? input.principal.minus(repaidPrincipal)
+        : monthlyPayment.minus(interest);
     const payment = principal.add(interest);
-    balance = month === input.months ? new Decimal(0) : balance.minus(principal);
-    totalInterest = totalInterest.add(interest);
+    repaidPrincipal = repaidPrincipal.add(principal);
+    balance =
+      month === input.months ? new Decimal(0) : input.principal.minus(repaidPrincipal);
     rows.push({ month, payment, principal, interest, balance });
   }
+
+  const totalPaid = rows.reduce(
+    (total, row) => total.add(row.payment),
+    new Decimal(0),
+  );
 
   return {
     principal: input.principal,
     monthlyPayment,
-    totalInterest,
-    totalPaid: input.principal.add(totalInterest),
+    totalInterest: totalPaid.minus(input.principal),
+    totalPaid,
     rows,
   };
 }
