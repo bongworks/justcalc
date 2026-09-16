@@ -1,5 +1,5 @@
-import Link from 'next/link';
-
 export function Header() {
-  return <header className="site-header"><Link href="/" prefetch={false}>바로계산기</Link></header>;
+  // A new document initializes one sanitized page view without GA history tracking.
+  // eslint-disable-next-line @next/next/no-html-link-for-pages
+  return <header className="site-header"><a href="/">바로계산기</a></header>;
 }

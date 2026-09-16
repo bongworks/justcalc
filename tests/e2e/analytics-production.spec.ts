@@ -16,3 +16,21 @@ test('configured production queues one view before asynchronous GA loading witho
   expect(JSON.stringify(commands)).not.toMatch(/987654321|income|private|secret/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://calc.bongworks.co.kr/car/fuel-cost/');
 });
+
+test('header home navigation creates one fresh query-free homepage view', async ({ page }) => {
+  await page.route('https://www.googletagmanager.com/**', (route) => route.fulfill({ contentType: 'application/javascript', body: '/* analytics transport intentionally stubbed */' }));
+  await page.goto('/car/fuel-cost/?income=987654321&income=private#secret');
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(1);
+  await page.locator('input').first().fill('987654');
+  await page.getByRole('banner').getByRole('link', { name: '바로계산기' }).click();
+  await expect(page).toHaveURL('http://127.0.0.1:3100/');
+  await expect.poll(async () => page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? [])
+    .map((entry) => Array.from(entry))
+    .filter(([type]) => type === 'config')
+    .map(([, , params]) => (params as { page_path?: string }).page_path))).toEqual(['/']);
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(1);
+  const commands = await page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)));
+  expect(commands.filter(([type]) => type === 'config')).toEqual([['config', 'G-TEST123456', expect.objectContaining({ send_page_view: true, page_path: '/', page_location: 'https://calc.bongworks.co.kr/' })]]);
+  expect(commands.filter(([type]) => type === 'event')).toHaveLength(0);
+  expect(JSON.stringify(commands)).not.toMatch(/987654|income|private|secret|fuel-cost/);
+});
