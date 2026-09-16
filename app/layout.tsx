@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Header } from '@/components/site/Header';
+import { Footer } from '@/components/site/Footer';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,9 +14,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ko">
       <body>
         <a className="skip-link" href="#main-content">본문으로 건너뛰기</a>
-        <header className="site-header"><Link href="/">바로계산기</Link></header>
+        <Header />
         <main id="main-content">{children}</main>
-        <footer className="site-footer">계산 결과는 참고용입니다.</footer>
+        <Footer />
       </body>
     </html>
   );
