@@ -1,5 +1,6 @@
 const categories = [
   {
+    id: 'car',
     name: '자동차',
     description: '차량 구매부터 운행까지 필요한 비용을 계산합니다.',
     tools: [
@@ -11,6 +12,7 @@ const categories = [
     ],
   },
   {
+    id: 'finance',
     name: '금융',
     description: '대출과 예적금의 이자·상환 금액을 비교합니다.',
     tools: [
@@ -20,6 +22,7 @@ const categories = [
     ],
   },
   {
+    id: 'life',
     name: '생활비',
     description: '한 달의 수입과 지출, 저축 여력을 살펴봅니다.',
     tools: [['월 생활비 예산 계산기', '/life/monthly-budget/']],
@@ -36,17 +39,24 @@ export default function Home() {
       </section>
       <section aria-labelledby="category-title">
         <h2 id="category-title">어떤 계산이 필요한가요?</h2>
+        <nav className="category-nav" aria-label="계산기 카테고리">
+          <ul>
+            {categories.map((category) => (
+              <li key={category.id}><a href={`#${category.id}`}>{category.name}</a></li>
+            ))}
+          </ul>
+        </nav>
         <div className="category-grid">
           {categories.map((category) => (
-            <article className="category-card" key={category.name}>
-              <h3>{category.name}</h3>
+            <section className="category-card" id={category.id} key={category.name} aria-labelledby={`${category.id}-title`}>
+              <h3 id={`${category.id}-title`}>{category.name}</h3>
               <p>{category.description}</p>
               <ul>
                 {category.tools.map(([title, href]) => (
                   <li key={href}><a href={href}>{title}</a></li>
                 ))}
               </ul>
-            </article>
+            </section>
           ))}
         </div>
       </section>
