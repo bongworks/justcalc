@@ -11,7 +11,7 @@ export const calculators = [
     relatedSlugs: ['fuel-cost', 'ev-charging-cost', 'purchase-cost'],
     guide: {
       formula: '연간 유지비 = 에너지 비용 + 보험료 + 자동차세 + 정비·소모품비 + 주차·통행료 등 기타 비용',
-      examples: [{ title: '연간 운행 계획', text: '주행거리와 실제 지출 항목을 넣어 월 평균 유지비와 1km당 비용을 비교합니다.' }],
+      examples: [{ title: '내연기관 연간 계획', text: '연 12,000km, 연비 12km/L, 단가 1,700원/L이면 연료비는 170만원입니다. 보험료 80만원, 세금 30만원, 정비 40만원, 기타 60만원을 더하면 연 380만원입니다.' }, { title: '전기차 연간 계획', text: '연 12,000km, 전비 6km/kWh, 단가 300원/kWh이면 충전비는 60만원입니다. 나머지 비용이 연 180만원이면 월 평균 유지비는 20만원입니다.' }],
       limitations: ['감가상각, 대출 이자, 사고 수리비는 기본 계산에 포함하지 않습니다.', '보험료와 자동차세는 차량·운전자 조건에 따라 달라집니다.'],
       sources: [{ label: '국토교통부 자동차365', href: 'https://www.car365.go.kr/' }],
     },
@@ -26,7 +26,7 @@ export const calculators = [
     relatedSlugs: ['maintenance-cost', 'purchase-cost'],
     guide: {
       formula: '예상 유류비 = 주행거리 ÷ 연비(km/L) × 유종 단가(원/L)',
-      examples: [{ title: '주말 장거리 운전', text: '420km를 주행하고 연비가 14km/L, 유종 단가가 1,700원/L이면 약 30L가 필요합니다.' }],
+      examples: [{ title: '주말 장거리 운전', text: '420km를 주행하고 연비가 14km/L, 유종 단가가 1,700원/L이면 30L가 필요하며 유류비는 51,000원입니다.' }, { title: '출퇴근 비용', text: '200km, 연비 10km/L, 단가 1,600원/L이면 20L를 사용하고 유류비는 32,000원입니다.' }],
       limitations: ['실제 연비는 교통량, 공회전, 적재량, 운전 습관에 따라 달라집니다.', '주유 할인과 유가 변동은 반영하지 않습니다.'],
       sources: [{ label: '한국석유공사 오피넷', href: 'https://www.opinet.co.kr/' }],
     },
@@ -41,7 +41,7 @@ export const calculators = [
     relatedSlugs: ['maintenance-cost', 'fuel-cost'],
     guide: {
       formula: '예상 충전비 = 주행거리 ÷ 전비(km/kWh) × 충전 단가(원/kWh)',
-      examples: [{ title: '월간 충전 계획', text: '240km를 주행하고 전비가 6km/kWh, 충전 단가가 300원/kWh이면 40kWh가 필요합니다.' }],
+      examples: [{ title: '월간 충전 계획', text: '240km를 주행하고 전비가 6km/kWh, 충전 단가가 300원/kWh이면 40kWh가 필요하며 충전비는 12,000원입니다.' }, { title: '급속 충전 단가 비교', text: '500km, 전비 5km/kWh, 충전 단가 400원/kWh이면 100kWh가 필요하며 충전비는 40,000원입니다.' }],
       limitations: ['충전 손실과 계절, 주행 습관 차이는 반영하지 않습니다.', '충전 사업자와 시간대별 요금은 직접 입력한 단가에만 반영됩니다.'],
       sources: [{ label: '환경부 무공해차 통합누리집', href: 'https://ev.or.kr/' }],
     },
@@ -56,7 +56,7 @@ export const calculators = [
     relatedSlugs: ['installment', 'maintenance-cost', 'loan-repayment'],
     guide: {
       formula: '자금 조달 차이 = 차량 가격 + 선택 비용 - 초기 현금 - 할부 원금',
-      examples: [{ title: '구매 예산 점검', text: '차량 가격과 옵션·등록 관련 비용을 합산한 뒤 현금과 할부 원금으로 부족분을 확인합니다.' }],
+      examples: [{ title: '구매 예산 점검', text: '차량 3,000만원과 선택 비용 200만원을 현금 1,200만원, 할부 2,000만원으로 조달하면 자금 차이는 0원입니다.' }, { title: '추가 자금 확인', text: '차량 3,000만원과 선택 비용 200만원에 현금 1,000만원, 할부 2,000만원을 입력하면 200만원이 더 필요합니다.' }],
       limitations: ['취득세, 보험료, 공채 등은 자동 추정하지 않습니다.', '할부는 원리금균등 가정을 사용하며 실제 계약 조건과 다를 수 있습니다.'],
       sources: [{ label: '국토교통부 자동차365', href: 'https://www.car365.go.kr/' }],
     },
@@ -71,7 +71,7 @@ export const calculators = [
     relatedSlugs: ['purchase-cost', 'loan-repayment', 'loan-interest'],
     guide: {
       formula: '원리금균등 월 납입액 = 원금 × 월 이자율 × (1 + 월 이자율)^개월 수 ÷ ((1 + 월 이자율)^개월 수 - 1)',
-      examples: [{ title: '60개월 할부', text: '할부 원금, 연 이자율, 기간을 넣어 월 납입액과 총이자를 확인합니다.' }],
+      examples: [{ title: '무이자 60개월', text: '할부 원금 3,000만원을 0% 금리로 60개월 원리금균등 상환하면 월 50만원이며 총이자는 0원입니다.' }, { title: '만기일시 12개월', text: '원금 1,200만원, 연 6%, 12개월 만기일시는 매월 이자 6만원을 내고 마지막 달에 원금 포함 1,206만원을 납입합니다.' }],
       limitations: ['취급 수수료, 중도상환 수수료, 연체 이자는 반영하지 않습니다.', '실제 금융 계약의 납입일과 원 단위 처리 방식은 다를 수 있습니다.'],
       sources: [{ label: '금융감독원 금융소비자정보포털 파인', href: 'https://fine.fss.or.kr/' }],
     },
@@ -86,7 +86,7 @@ export const calculators = [
     relatedSlugs: ['loan-repayment', 'installment'],
     guide: {
       formula: '단리 이자 = 대출 원금 × 연 이자율 × 이용 기간(연 단위)',
-      examples: [{ title: '단기 자금 이용', text: '대출 원금과 일·개월·년 단위의 이용 기간을 넣고 연 기준 일수를 선택합니다.' }],
+      examples: [{ title: '6개월 자금 이용', text: '원금 1,000만원, 연 6%, 6개월을 입력하면 단리 이자는 30만원, 원금 포함 만기액은 1,030만원입니다.' }, { title: '일 단위 이용', text: '원금 365만원, 연 10%, 10일, 연 기준 365일이면 단리 이자는 10,000원입니다. 366일 기준을 선택하면 결과가 달라집니다.' }],
       limitations: ['금융기관별 일수 계산 방식, 우대금리, 연체이자는 반영하지 않습니다.', '참고용 계산이며 실제 계약·청구 금액과 다를 수 있습니다.'],
       sources: [{ label: '금융감독원 금융소비자정보포털 파인', href: 'https://fine.fss.or.kr/' }],
     },
@@ -101,7 +101,7 @@ export const calculators = [
     relatedSlugs: ['loan-interest', 'compound-interest', 'installment'],
     guide: {
       formula: '월 이자율 = 연 이자율 ÷ 12, 원금균등은 매월 같은 원금에 남은 원금 이자를 더합니다.',
-      examples: [{ title: '상환 방식 선택', text: '같은 원금·금리·기간에서 총이자와 초반 월 납입액의 차이를 비교합니다.' }],
+      examples: [{ title: '원금균등 12개월', text: '원금 1,200만원, 연 6%, 12개월 원금균등은 첫 달 106만원, 마지막 달 100만5천원이며 총이자는 39만원입니다.' }, { title: '만기일시와 비교', text: '같은 원금 1,200만원, 연 6%, 12개월 만기일시는 총이자가 72만원입니다. 원금을 늦게 갚으므로 원금균등보다 이자가 큽니다.' }],
       limitations: ['거치 기간, 중도상환, 수수료는 반영하지 않습니다.', '0% 금리는 원금을 개월 수로 나누는 단순 가정으로 계산합니다.'],
       sources: [{ label: '금융감독원 금융소비자정보포털 파인', href: 'https://fine.fss.or.kr/' }],
     },
@@ -115,8 +115,8 @@ export const calculators = [
     lastReviewed: '2026-09-16',
     relatedSlugs: ['loan-repayment', 'monthly-budget'],
     guide: {
-      formula: '만기 예상액은 초기 원금과 매월 납입액에 선택한 주기별 이자를 누적해 계산합니다.',
-      examples: [{ title: '목돈 마련', text: '초기 원금과 매월 저축액, 세전 연 이자율, 기간을 입력해 누적 흐름을 봅니다.' }],
+      formula: '월 복리 · 매월 말 납입: 월말 잔액 = 전월 잔액 × (1 + 연 이자율 ÷ 100 ÷ 12) + 매월 납입액',
+      examples: [{ title: '두 달 복리', text: '초기 원금 100만원, 연 12%, 매월 납입 0원으로 2개월이면 월 1% 이자가 누적되어 세전 만기액은 1,020,100원입니다.' }, { title: '매월 말 납입', text: '초기 원금 0원, 매월 말 10만원, 연 12%, 2개월이면 첫 납입액에 한 달 이자 1,000원이 붙어 세전 만기액은 201,000원입니다.' }],
       limitations: ['금융기관별 우대 조건, 중도해지, 이자 지급일은 반영하지 않습니다.', '세후 결과는 사용자가 직접 입력한 세율이 있을 때만 추정할 수 있습니다.'],
       sources: [{ label: '금융감독원 금융소비자정보포털 파인', href: 'https://fine.fss.or.kr/' }],
     },
@@ -131,7 +131,7 @@ export const calculators = [
     relatedSlugs: ['maintenance-cost', 'compound-interest'],
     guide: {
       formula: '잔여 금액 = 월 순수입 - 고정비 - 변동비 - 목표 저축액',
-      examples: [{ title: '월간 예산 점검', text: '주거비, 자동차비, 식비와 목표 저축액을 나눠 입력해 지출 비율을 확인합니다.' }],
+      examples: [{ title: '월간 예산 점검', text: '월 순수입 300만원, 전체 지출 180만원, 목표 저축 70만원이면 잔여 금액은 50만원이고 지출 비율은 60%입니다.' }, { title: '지출이 큰 달', text: '월 순수입 200만원, 전체 지출 190만원, 목표 저축 30만원이면 잔여 금액은 -20만원입니다. 이 수치는 입력한 예산의 차이를 보여 줍니다.' }],
       limitations: ['개인의 재무 상태나 소비 습관을 평가하지 않습니다.', '자동차비는 자동차 유지비 계산기 결과를 직접 입력해야 합니다.'],
       sources: [{ label: '통계청 국가통계포털', href: 'https://kosis.kr/' }],
     },

@@ -10,7 +10,7 @@ export interface CalculatorResult {
 
 const referenceWarning = '참고용 계산이며 실제 계약·청구 금액과 다를 수 있습니다.';
 
-export function ResultPanel({ result, children }: { result: CalculatorResult | null; children?: ReactNode }) {
+export function ResultPanel({ result, children, onCopy }: { result: CalculatorResult | null; children?: ReactNode; onCopy?: () => void }) {
   const id = useId();
   const [copyStatus, setCopyStatus] = useState<{ result: CalculatorResult; message: string } | null>(null);
 
@@ -19,6 +19,7 @@ export function ResultPanel({ result, children }: { result: CalculatorResult | n
     const text = [result.summary, ...(result.rows ?? [])].map((row) => `${row.label}: ${row.value}`).join('\n');
     try {
       await navigator.clipboard.writeText(`${text}\n${referenceWarning}`);
+      onCopy?.();
       setCopyStatus({ result, message: '결과를 복사했습니다.' });
     } catch {
       setCopyStatus({ result, message: '복사하지 못했습니다. 결과를 직접 선택해 복사해 주세요.' });

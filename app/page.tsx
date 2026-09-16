@@ -1,31 +1,20 @@
+import { calculatorCatalog } from '@/lib/calculators/registry';
+
 const categories = [
   {
     id: 'car',
     name: '자동차',
     description: '차량 구매부터 운행까지 필요한 비용을 계산합니다.',
-    tools: [
-      ['자동차 유지비 계산기', '/car/maintenance-cost/'],
-      ['유류비·연비 계산기', '/car/fuel-cost/'],
-      ['전기차 충전비 계산기', '/car/ev-charging-cost/'],
-      ['차량 구매 총비용 계산기', '/car/purchase-cost/'],
-      ['자동차 할부 계산기', '/car/installment/'],
-    ],
   },
   {
     id: 'finance',
     name: '금융',
     description: '대출과 예적금의 이자·상환 금액을 비교합니다.',
-    tools: [
-      ['대출 이자 계산기', '/finance/loan-interest/'],
-      ['대출 상환 방식 비교 계산기', '/finance/loan-repayment/'],
-      ['예적금·복리 계산기', '/finance/compound-interest/'],
-    ],
   },
   {
     id: 'life',
     name: '생활비',
     description: '한 달의 수입과 지출, 저축 여력을 살펴봅니다.',
-    tools: [['월 생활비 예산 계산기', '/life/monthly-budget/']],
   },
 ] as const;
 
@@ -52,8 +41,8 @@ export default function Home() {
               <h3 id={`${category.id}-title`}>{category.name}</h3>
               <p>{category.description}</p>
               <ul>
-                {category.tools.map(([title, href]) => (
-                  <li key={href}><a href={href}>{title}</a></li>
+                {calculatorCatalog.filter((calculator) => calculator.category === category.id).map(({ title, route }) => (
+                  <li key={route}><a href={route}>{title}</a></li>
                 ))}
               </ul>
             </section>

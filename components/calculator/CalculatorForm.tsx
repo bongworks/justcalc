@@ -13,6 +13,7 @@ interface BaseField {
   required?: boolean;
   defaultValue?: string;
   hint?: string;
+  visibleWhen?: { field: string; value: string };
 }
 
 export type CalculatorField = BaseField & (
@@ -52,17 +53,18 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
   const [values, setValues] = useState(() => initialValues(fields));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
+  const visibleFields = fields.filter((field) => !field.visibleWhen || values[field.visibleWhen.field] === field.visibleWhen.value);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
     const nextErrors: Record<string, string> = {};
-    for (const field of fields) {
+    for (const field of visibleFields) {
       const error = fieldError(field, values[field.name] ?? '');
       if (error) nextErrors[field.name] = error;
     }
     setErrors(nextErrors);
-    const firstInvalid = fields.find((field) => nextErrors[field.name]);
+    const firstInvalid = visibleFields.find((field) => nextErrors[field.name]);
     if (firstInvalid) {
       const input = formRef.current?.elements.namedItem(firstInvalid.name);
       if (input instanceof HTMLElement) input.focus();
@@ -92,7 +94,7 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
     }}>
       <fieldset className="calculator-fields" disabled={!ready} aria-label="계산값 입력">
       <div className="field-grid">
-        {fields.map((field) => {
+        {visibleFields.map((field) => {
           const fieldId = `${id}-${field.name}`;
           const unit = field.type !== 'select' ? field.unit : undefined;
           const describedBy = [unit && `${fieldId}-unit`, field.hint && `${fieldId}-hint`, errors[field.name] && `${fieldId}-error`].filter(Boolean).join(' ') || undefined;
