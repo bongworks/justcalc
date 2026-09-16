@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { pageMetadata } from '@/lib/seo/site';
 import { CalculatorPage } from '@/components/calculator/CalculatorPage';
 import { CalculatorClient } from '@/components/calculator/CalculatorClient';
 import { getCalculatorByCategoryAndSlug, getCalculatorsByCategory } from '@/lib/calculators/registry';
@@ -13,7 +14,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props) {
   const definition = getCalculatorByCategoryAndSlug('finance', (await params).slug);
   if (!definition) notFound();
-  return { title: definition.title, description: definition.description };
+  return pageMetadata(definition);
 }
 
 export default async function Page({ params }: Props) {

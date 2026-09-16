@@ -1,0 +1,18 @@
+import { expect, test } from '@playwright/test';
+
+test.skip(process.env.E2E_GA_PRODUCTION !== '1', 'Requires a production build with the synthetic GA fixture ID.');
+
+test('configured production queues one view before asynchronous GA loading without query values', async ({ page, request }) => {
+  const html = await (await request.get('/car/fuel-cost/?income=987654321&income=private')).text();
+  expect(html.match(/<script id="ga-bootstrap">/g)).toHaveLength(1);
+  expect(html.indexOf('<script id="ga-bootstrap">')).toBeLessThan(html.indexOf('<body'));
+  await page.route('https://www.googletagmanager.com/**', (route) => route.fulfill({ contentType: 'application/javascript', body: '/* analytics transport intentionally stubbed */' }));
+  await page.goto('/car/fuel-cost/?income=987654321&income=private#secret');
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(1);
+  await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveAttribute('data-nscript', 'afterInteractive');
+  const commands = await page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)));
+  expect(commands.filter(([type]) => type === 'config')).toHaveLength(1);
+  expect(commands.filter(([type, event]) => type === 'event' && event === 'calculator_view')).toHaveLength(1);
+  expect(JSON.stringify(commands)).not.toMatch(/987654321|income|private|secret/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://calc.bongworks.co.kr/car/fuel-cost/');
+});
