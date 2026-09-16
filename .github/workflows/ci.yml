@@ -12,9 +12,28 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm check:catalog
+      - run: pnpm check:privacy
       - run: pnpm test
       - run: pnpm build
+        env:
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: ''
+      - run: pnpm check:static
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: G-TEST123456
+      - run: pnpm check:static -- --ga-fixture
+      - run: pnpm test:e2e:analytics
+        env:
+          E2E_GA_PRODUCTION: '1'
+      # The final output must never retain the synthetic analytics ID.
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: ''
+      - run: pnpm check:static

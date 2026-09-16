@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "python3 -m http.server 3000 --bind 127.0.0.1 --directory out",
+    "check:catalog": "node --experimental-strip-types scripts/check-calculator-catalog.mjs",
+    "check:privacy": "node scripts/check-no-input-leak.mjs",
+    "check:static": "node --experimental-strip-types scripts/check-static-output.mjs",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:analytics": "playwright test --config playwright.analytics.config.ts"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",

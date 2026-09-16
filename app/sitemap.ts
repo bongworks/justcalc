@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next';
 import { calculatorCatalog } from '@/lib/calculators/registry';
 import { getSiteOrigin, homePage, policyPages } from '@/lib/seo/site';
 
+export const dynamic = 'force-static';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const origin = getSiteOrigin();
   return [

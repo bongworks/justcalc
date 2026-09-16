@@ -32,11 +32,15 @@
 ## 검증
 
 ```sh
-pnpm exec playwright test tests/e2e/seo.spec.ts
-pnpm test
-pnpm build
+NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build
+pnpm check:static
+pnpm test:e2e
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-TEST123456 pnpm build
-E2E_GA_PRODUCTION=1 pnpm exec playwright test --config playwright.analytics.config.ts
+pnpm check:static -- --ga-fixture
+E2E_GA_PRODUCTION=1 pnpm test:e2e:analytics
+# 합성 ID가 포함된 out/을 배포하지 않도록 반드시 최종 빌드를 복원합니다.
+NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build
+pnpm check:static
 ```
 
-마지막 두 명령의 ID는 자동 테스트용 합성 값입니다. 프로덕션 분석 테스트는 외부 Google 스크립트 응답을 로컬에서 대체하여 실제 분석 전송을 하지 않습니다. 배포 빌드에는 테스트 값을 사용하지 마세요.
+`G-TEST123456`은 자동 테스트용 합성 값입니다. 테스트는 HTML의 ID가 이 값인지 확인하고 외부 Google 스크립트 응답을 로컬에서 대체하며 나머지 외부 요청은 차단합니다. 실제 분석 전송을 하지 않으며 실제 GA 속성이나 관리자 설정의 검증을 대신하지 않습니다. 테스트가 실패했더라도 마지막 두 명령을 실행해 합성 ID 없는 산출물로 복원하세요. 배포 빌드에는 테스트 값을 사용하지 마세요.

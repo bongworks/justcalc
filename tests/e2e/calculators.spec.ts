@@ -94,3 +94,25 @@ test('mobile calculate button is reachable and tables do not overflow the page',
   await button.click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test('keyboard alone reaches the form and completes a calculation', async ({ page }) => {
+  await page.goto('/car/fuel-cost/');
+  const distance = page.getByLabel('주행거리');
+  for (let step = 0; step < 25 && !(await distance.evaluate((element) => element === document.activeElement)); step++) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(distance).toBeFocused();
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.type('420');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('textbox', { name: '연비', exact: true })).toBeFocused();
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.type('14');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.type('1700');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: '계산하기' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('₩51,000', { exact: true })).toBeVisible();
+});

@@ -6,6 +6,8 @@
 
 ## 시작하기
 
+Node.js 24, pnpm 10.18.2와 정적 미리보기용 Python 3가 필요합니다.
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev
@@ -17,10 +19,17 @@ pnpm dev
 
 ```bash
 pnpm lint
+pnpm check:catalog
+pnpm check:privacy
 pnpm test
-pnpm build
+NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build
+pnpm check:static
 pnpm test:e2e
 ```
+
+`pnpm build`는 계산기 9개·정책 페이지 5개·홈, `robots.txt`, `sitemap.xml` 및 정적 자산을 `out/`에 생성합니다. 배포 대상은 `out/` 전체이며 Next 서버, API, 데이터베이스가 필요하지 않습니다. `pnpm start`는 현재 `out/`만 Python 정적 서버로 제공합니다. E2E도 이 산출물을 사용하며 실행 중인 개발 서버를 재사용하지 않습니다. 빌드 후 `pnpm start`로 [정적 미리보기](http://127.0.0.1:3000)를 확인할 수 있습니다.
+
+품질 게이트는 카탈로그 필수 콘텐츠, 입력·결과의 URL/저장소/네트워크/GA 유출 경계, HTML·사이트맵·canonical·색인 설정·자산 누락, 페이지별 gzip JS 300 KiB / CSS 30 KiB 예산을 검사합니다. 출시는 별도의 [출시 체크리스트](docs/release-checklist.md)를 모두 충족해야 합니다.
 
 ## 공개 출시와 분석·검색 설정
 

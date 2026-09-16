@@ -1,7 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { calculatorCatalog, calculatorBySlug } from '@/lib/calculators/registry';
+import { validateCalculatorCatalog } from '@/lib/calculators/catalog';
 
 describe('calculator catalog', () => {
+  it('accepts the complete catalog and rejects incomplete release content', () => {
+    expect(validateCalculatorCatalog(calculatorCatalog)).toEqual([]);
+    const fixture = structuredClone(calculatorCatalog);
+    fixture[0].guide.sources = [];
+    fixture[1].route = fixture[0].route;
+    fixture[2].relatedSlugs = ['unknown-calculator'];
+    fixture[3].guide.examples = [];
+    fixture[4].lastReviewed = '2026-02-31';
+    fixture[5].guide.limitations = [];
+    const errors = validateCalculatorCatalog(fixture);
+    expect(errors).toContain('maintenance-cost: at least one source is required');
+    expect(errors).toContain('duplicate route: /car/maintenance-cost/');
+    expect(errors).toContain('ev-charging-cost: unknown related slug unknown-calculator');
+    expect(errors).toContain('purchase-cost: at least two examples are required');
+    expect(errors).toContain('installment: invalid review date');
+    expect(errors).toContain('loan-interest: limitations are required');
+    expect(validateCalculatorCatalog(fixture.slice(1))).toContain('expected exactly 9 calculators');
+  });
   it('registers the nine distinct P0 routes', () => {
     expect(calculatorCatalog).toHaveLength(9);
     expect(new Set(calculatorCatalog.map((calculator) => calculator.route)).size).toBe(9);

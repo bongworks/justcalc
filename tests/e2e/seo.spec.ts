@@ -44,7 +44,7 @@ test('policy pages and footer explain local calculations, analytics and the laun
   await expect(page.getByText(/공개 출시와 AdSense 신청은 보류/)).toBeVisible();
 });
 
-test('development never loads analytics', async ({ page }) => {
+test('static release without a measurement ID never loads analytics', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', origin + '/');
