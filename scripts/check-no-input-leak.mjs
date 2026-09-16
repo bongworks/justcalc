@@ -32,6 +32,13 @@ export function scanSource(file, source) {
   function visit(node) {
     if (ts.isStringLiteral(node) && node.text === 'use server') errors.push(`${file}: server actions are forbidden`);
     if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && prohibited.has(node.text)) errors.push(`${file}: prohibited ${node.text}`);
+    if (ts.isIdentifier(node) && ['window', 'globalThis', 'self'].includes(node.text)) {
+      const parent = node.parent;
+      // Whole browser globals must not escape into aliases, casts or callbacks.
+      // Direct member receivers and availability checks do not acquire an alias.
+      const directUse = ((ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) && parent.expression === node) || ts.isTypeOfExpression(parent);
+      if (!directUse) errors.push(`${file}: browser global object acquisition is forbidden`);
+    }
     if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && node.text === 'location') {
       const member = node.parent;
       // Permit only these complete scalar reads, never the Location object itself.

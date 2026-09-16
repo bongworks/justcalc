@@ -30,6 +30,10 @@ describe('privacy source gate', () => {
     'const current = window[key]; current.search',
     'const current = window["loc" + "ation"]; current.search',
     'const { location: current } = window; current.search',
+    'const browser = window; const current = browser["loc" + "ation"]; current.search',
+    'let browser; browser = globalThis; browser["loc" + "ation"].search',
+    'const browser = self; const other = browser; other["loc" + "ation"].search',
+    'const browser = (window as Window); browser["loc" + "ation"].search',
     'window.location = resultUrl',
     'location.assign(resultUrl)',
     'new FormData(form)',
@@ -48,6 +52,7 @@ describe('privacy source gate', () => {
     expect(scanSource('lib/seo/site.ts', 'const page = { route: "/car/fuel-cost/", title: "계산기" };')).toEqual([]);
     expect(scanSource('components/calculator/Fixture.tsx', 'trackCalculatorEvent("share", slug, { source: "copy_link" });')).toEqual([]);
     expect(scanSource('components/calculator/Fixture.tsx', '<a href="/car/fuel-cost/">계산기</a>; const url = window.location.origin + window.location.pathname;')).toEqual([]);
+    expect(scanSource('components/calculator/Fixture.tsx', 'if (typeof window === "undefined") return;')).toEqual([]);
   });
   it('rejects backend routes and server actions', () => {
     expect(scanSource('app/api/collect/route.ts', 'export function GET() {}')).toContain('app/api/collect/route.ts: backend/API routes are forbidden');
