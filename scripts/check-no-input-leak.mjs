@@ -32,6 +32,17 @@ export function scanSource(file, source) {
   function visit(node) {
     if (ts.isStringLiteral(node) && node.text === 'use server') errors.push(`${file}: server actions are forbidden`);
     if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && prohibited.has(node.text)) errors.push(`${file}: prohibited ${node.text}`);
+    if ((ts.isIdentifier(node) || ts.isStringLiteral(node)) && node.text === 'location') {
+      const member = node.parent;
+      // Permit only these complete scalar reads, never the Location object itself.
+      // Reject acquisition before an alias can hide subsequent query access.
+      const safeRead = ts.isPropertyAccessExpression(member) && member.name === node &&
+        ts.isIdentifier(member.expression) && member.expression.text === 'window' &&
+        ts.isPropertyAccessExpression(member.parent) && member.parent.expression === member &&
+        ['origin', 'pathname'].includes(member.parent.name.text);
+      if (!safeRead) errors.push(`${file}: location object acquisition is forbidden`);
+    }
+    if (ts.isElementAccessExpression(node) && ['window', 'globalThis', 'self'].includes(node.expression.getText(ast)) && !ts.isStringLiteral(node.argumentExpression)) errors.push(`${file}: dynamic browser global access is forbidden`);
     if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
       const path = accessPath(node);
       if (path.includes('location') && path.at(-1) !== 'location' && !['origin', 'pathname'].includes(path.at(-1))) errors.push(`${file}: full URL/query access or navigation is forbidden`);
