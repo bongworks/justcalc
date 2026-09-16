@@ -25,8 +25,9 @@ export function formatNumber(value: Decimal.Value, decimalPlaces = 2): string {
   return groupDigits(toDecimal(value).toDecimalPlaces(decimalPlaces, Decimal.ROUND_HALF_UP).toFixed(decimalPlaces));
 }
 
-export function formatPercent(value: Decimal.Value, decimalPlaces = 2): string {
-  const formatted = formatNumber(value, decimalPlaces).replace(/(?:\.0+|(?:(\.\d*?)0+))$/, '$1');
+/** Formats an internal decimal ratio, so `0.125` is displayed as `12.5%`. */
+export function formatPercent(ratio: Decimal.Value, decimalPlaces = 2): string {
+  const formatted = formatNumber(toDecimal(ratio).times(100), decimalPlaces).replace(/(?:\.0+|(?:(\.\d*?)0+))$/, '$1');
 
   return `${formatted}%`;
 }

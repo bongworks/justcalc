@@ -39,6 +39,6 @@ describe('decimal formatting', () => {
 
   it('formats decimal values and percentages without scientific notation', () => {
     expect(formatNumber(new Decimal('1234567.891'), 2)).toBe('1,234,567.89');
-    expect(formatPercent(new Decimal('12.5'))).toBe('12.5%');
+    expect(formatPercent(new Decimal('0.125'))).toBe('12.5%');
   });
 });
