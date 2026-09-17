@@ -1,4 +1,6 @@
-export type CalculatorCategory = 'car' | 'finance' | 'life';
+import type { CalculatorCategory } from './categories';
+
+export type { CalculatorCategory } from './categories';
 
 export interface CalculatorGuide {
   formula: string;

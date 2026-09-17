@@ -7,6 +7,8 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
+    // Other checkouts are linted from their own roots.
+    ".worktrees/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",

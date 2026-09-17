@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PolicyPage } from '@/components/site/PolicyPage';
 import { pageMetadata, policyPages } from '@/lib/seo/site';
 
@@ -19,6 +20,6 @@ export default function Privacy() {
     <p>자동광고 스크립트는 <code>NEXT_PUBLIC_ADSENSE_CLIENT_ID</code>가 올바른 형식으로 설정된 프로덕션 빌드에서만 연결됩니다. 값이 비어 있거나 개발 환경이면 광고 스크립트와 자동 배치는 로드하지 않습니다.</p>
     <p>자동광고를 실제 활성화하면 Google의 광고 서비스가 기기·브라우저 정보와 쿠키를 처리할 수 있습니다. 활성화 전에 실제 운영 환경과 관할에 맞는 고지·선택·동의 절차를 검토하고, Google의 <a href="https://policies.google.com/privacy">개인정보처리방침</a>을 함께 안내합니다. 계산 입력값과 결과는 광고 서비스로 전송하지 않습니다.</p>
     <p>웹사이트 제공을 위해 호스팅 제공자가 요청 주소, IP 주소 등 일반 접속 로그를 처리할 수 있습니다. 계산값을 URL에 넣지 마세요. 공개 운영 전에 실제 호스팅·분석 설정, 보관 기간과 관련 법령상 고지·동의 요건을 확정하여 이 정책에 반영해야 합니다.</p>
-    <p>운영자의 신원과 개인정보 문의 창구는 아직 확정되지 않았습니다. <a href="/contact/">운영 및 문의 안내</a>의 공개 조건을 충족하기 전에는 서비스를 공개 운영하지 않습니다.</p>
+    <p>운영자의 신원과 개인정보 문의 창구는 아직 확정되지 않았습니다. <Link href="/contact/">운영 및 문의 안내</Link>의 공개 조건을 충족하기 전에는 서비스를 공개 운영하지 않습니다.</p>
   </PolicyPage>;
 }

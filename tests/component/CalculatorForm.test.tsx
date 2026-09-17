@@ -8,6 +8,22 @@ import { CalculatorForm } from '@/components/calculator/CalculatorForm';
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const fields = [{ name: 'distanceKm', label: '주행거리', unit: 'km', required: true }] as const;
 
+it('submits date and text fields locally and exposes their own validation', async () => {
+  const user = userEvent.setup();
+  const onCalculate = vi.fn();
+  render(<CalculatorForm fields={[
+    { name: 'date', label: '기준일', type: 'date', required: true, defaultValue: '2026-09-17' },
+    { name: 'choices', label: '후보 목록', type: 'text', required: true, validate: (raw) => raw.includes(',') ? undefined : '두 항목 이상 입력해 주세요.' },
+  ]} onCalculate={onCalculate} />);
+  await user.type(screen.getByLabelText('후보 목록', { exact: false }), '사과');
+  await user.click(screen.getByRole('button', { name: '계산하기' }));
+  expect(screen.getByText('두 항목 이상 입력해 주세요.')).toBeVisible();
+  expect(onCalculate).not.toHaveBeenCalled();
+  await user.type(screen.getByLabelText('후보 목록', { exact: false }), ', 배');
+  await user.click(screen.getByRole('button', { name: '계산하기' }));
+  expect(onCalculate).toHaveBeenCalledWith({ date: '2026-09-17', choices: '사과, 배' });
+});
+
 it('disables native submission in server HTML until client event handlers are ready', () => {
   const html = renderToStaticMarkup(<CalculatorForm fields={fields} onCalculate={() => {}} />);
   render(<div dangerouslySetInnerHTML={{ __html: html }} />);
