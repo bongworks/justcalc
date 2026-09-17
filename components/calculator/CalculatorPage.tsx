@@ -19,7 +19,11 @@ export function CalculatorPage<I, O>({ definition, children }: { definition: Cal
       ] }} />
       <Breadcrumbs items={[{ label: '홈', href: '/' }, { label: categoryLabels[definition.category], href: `/#${definition.category}` }, { label: definition.title }]} />
       <header className="calculator-heading"><h1>{definition.title}</h1><p>{definition.description}</p></header>
-      <section className="calculator-workspace" aria-label="계산기">{children}</section>
+      <section className="calculator-category-banner" aria-label={`${categoryLabels[definition.category]} 계산기 안내`}>
+        <p><strong>{categoryLabels[definition.category]} · {definition.title}</strong></p>
+        <p>{definition.description}</p>
+      </section>
+      <section className="calculator-workspace" aria-label="계산기 작업 영역">{children}</section>
       <CalculatorGuide guide={definition.guide} lastReviewed={definition.lastReviewed} />
       <RelatedCalculators slugs={definition.relatedSlugs} />
     </article>
