@@ -1,26 +1,10 @@
+import { CalculatorDirectory } from '@/components/content/CalculatorDirectory';
 import { calculatorCatalog } from '@/lib/calculators/registry';
+import { calculatorCategories } from '@/lib/calculators/categories';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getSiteOrigin, homePage, pageMetadata, siteName, webPageData } from '@/lib/seo/site';
 
 export const metadata = pageMetadata(homePage);
-
-const categories = [
-  {
-    id: 'car',
-    name: '자동차',
-    description: '차량 구매부터 운행까지 필요한 비용을 계산합니다.',
-  },
-  {
-    id: 'finance',
-    name: '금융',
-    description: '대출과 예적금의 이자·상환 금액을 비교합니다.',
-  },
-  {
-    id: 'life',
-    name: '생활비',
-    description: '한 달의 수입과 지출, 저축 여력을 살펴봅니다.',
-  },
-] as const;
 
 export default function Home() {
   return (
@@ -34,32 +18,7 @@ export default function Home() {
       </section>
       <section aria-labelledby="category-title">
         <h2 id="category-title">어떤 계산이 필요한가요?</h2>
-        <nav className="category-nav" aria-label="계산기 카테고리">
-          <ul>
-            {categories.map((category) => (
-              <li key={category.id}><a href={`#${category.id}`}>{category.name}</a></li>
-            ))}
-          </ul>
-        </nav>
-        <div className="category-grid">
-          {categories.map((category) => (
-            <section className="category-card" id={category.id} key={category.name} aria-labelledby={`${category.id}-title`}>
-              <h3 id={`${category.id}-title`}>{category.name}</h3>
-              <p>{category.description}</p>
-              <ul>
-                {calculatorCatalog.filter((calculator) => calculator.category === category.id).map(({ title, description, route }) => (
-                  <li key={route}>
-                    <a className="home-calculator-card" href={route}>
-                      <h4>{title}</h4>
-                      <p>{description}</p>
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <CalculatorDirectory calculators={calculatorCatalog} categories={calculatorCategories} />
       </section>
     </div>
   );
