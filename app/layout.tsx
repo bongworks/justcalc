@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
+import { AdSenseLoader } from '@/components/adsense/AdSenseLoader';
 import { getGaMeasurementId } from '@/lib/analytics/config';
+import { getAdSenseConfig } from '@/lib/adsense/config';
 import { getSiteOrigin, getVerification } from '@/lib/seo/site';
 import './globals.css';
 
@@ -17,9 +19,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const measurementId = getGaMeasurementId();
+  const adSense = getAdSenseConfig();
   return (
     <html lang="ko">
-      <head>{measurementId && <GoogleAnalytics measurementId={measurementId} siteOrigin={getSiteOrigin()} />}</head>
+      <head>{measurementId && <GoogleAnalytics measurementId={measurementId} siteOrigin={getSiteOrigin()} />}{adSense && <AdSenseLoader clientId={adSense.clientId} />}</head>
       <body>
         <a className="skip-link" href="#main-content">본문으로 건너뛰기</a>
         <Header />
