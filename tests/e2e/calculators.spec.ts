@@ -69,8 +69,9 @@ test('installment mode and maintenance powertrain select their own results', asy
   await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toBeVisible();
 });
 
-test('category and slug mismatch returns 404', async ({ page }) => {
-  expect((await page.goto('/life/fuel-cost/'))?.status()).toBe(404);
+test('generic calculator route preserves known pages and rejects category mismatches', async ({ page }) => {
+  expect((await page.goto('/finance/loan-interest/'))?.status()).toBe(200);
+  expect((await page.goto('/salary/fuel-cost/'))?.status()).toBe(404);
 });
 
 test('page sharing copies only the calculator base URL', async ({ page, baseURL }) => {
