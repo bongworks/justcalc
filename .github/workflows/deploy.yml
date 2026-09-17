@@ -78,7 +78,7 @@ jobs:
         run: pnpm exec playwright install chromium
 
       - name: Run static E2E tests
-        run: pnpm test:e2e
+        run: pnpm test:e2e --workers=1
 
       - name: Verify the synthetic analytics build
         env:
