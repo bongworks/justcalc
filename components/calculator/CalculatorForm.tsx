@@ -92,6 +92,7 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
       setFormError('');
       onReset?.();
     }}>
+      <div className="calculator-form-heading"><h2>계산 조건</h2><p>필요한 항목만 입력한 뒤 계산하기를 눌러 주세요.</p></div>
       <fieldset className="calculator-fields" disabled={!ready} aria-label="계산값 입력">
       <div className="field-grid">
         {visibleFields.map((field) => {

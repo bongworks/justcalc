@@ -27,6 +27,7 @@ jobs:
     env:
       NEXT_PUBLIC_SITE_URL: https://calc.bongworks.co.kr
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+      NEXT_PUBLIC_ADSENSE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_ADSENSE_CLIENT_ID }}
       DEPLOY_ROOT: ${{ vars.JUSTCALC_DEPLOY_ROOT }}
       SERVICE_PORT: '34560'
       SERVICE_HOST: 0.0.0.0
@@ -67,9 +68,10 @@ jobs:
           pnpm check:privacy
           pnpm test
 
-      - name: Build and verify without analytics
+      - name: Build and verify without public integrations
         env:
           NEXT_PUBLIC_GA_MEASUREMENT_ID: ''
+          NEXT_PUBLIC_ADSENSE_CLIENT_ID: ''
         run: |
           pnpm build
           pnpm check:static
@@ -83,6 +85,7 @@ jobs:
       - name: Verify the synthetic analytics build
         env:
           NEXT_PUBLIC_GA_MEASUREMENT_ID: G-TEST123456
+          NEXT_PUBLIC_ADSENSE_CLIENT_ID: ''
         run: |
           pnpm build
           pnpm check:static -- --ga-fixture

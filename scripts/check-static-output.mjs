@@ -50,7 +50,7 @@ function robotsAllowCanonicalPaths(robots, paths) {
   return true;
 }
 
-export function validateStaticPage(html, page, gaEnabled) {
+export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false) {
   const errors = [];
   const doc = new JSDOM(html).window.document;
   const fail = (message) => errors.push(`${page.route}: ${message}`);
@@ -71,6 +71,7 @@ export function validateStaticPage(html, page, gaEnabled) {
   });
   if (!data.some((item) => item['@type'] === 'WebPage' && item.url === canonical)) fail('matching WebPage JSON-LD is required');
   if (!gaEnabled && /ga-bootstrap|googletagmanager\.com\/gtag\/js/.test(html)) fail('GA must be absent without a measurement ID');
+  if (!adSenseEnabled && /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/.test(html)) fail('AdSense must be absent without a publisher ID');
   return errors;
 }
 
@@ -78,7 +79,11 @@ export function gaEnabledForStaticOutput(measurementId = process.env.NEXT_PUBLIC
   return Boolean(measurementId) || args.includes('--ga-fixture');
 }
 
-export function checkStaticOutput(directory = resolve('out'), gaEnabled = false) {
+export function adSenseEnabledForStaticOutput(clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID, args = process.argv) {
+  return /^ca-pub-\d{10,24}$/.test(clientId) || args.includes('--adsense-fixture');
+}
+
+export function checkStaticOutput(directory = resolve('out'), gaEnabled = false, adSenseEnabled = false) {
   const errors = [];
   for (const artifact of ['api', 'server.js', '.next', 'node_modules']) {
     if (existsSync(resolve(directory, artifact))) errors.push(`server artifact is forbidden: ${artifact}`);
@@ -90,7 +95,7 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false)
     const file = resolve(directory, `.${page.route}`, 'index.html');
     if (!existsSync(file)) { errors.push(`missing static artifact: ${page.route}index.html`); continue; }
     const html = readFileSync(file, 'utf8');
-    errors.push(...validateStaticPage(html, page, gaEnabled));
+    errors.push(...validateStaticPage(html, page, gaEnabled, adSenseEnabled));
     const doc = new JSDOM(html).window.document;
     for (const [selector, attribute, budget] of [['script[src]', 'src', 300 * 1024], ['link[rel="stylesheet"]', 'href', 30 * 1024]]) {
       const assets = new Set([...doc.querySelectorAll(selector)].map((item) => item.getAttribute(attribute)).filter((url) => url.startsWith('/')));
@@ -126,8 +131,9 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false)
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const gaEnabled = gaEnabledForStaticOutput();
-  const result = checkStaticOutput(resolve('out'), gaEnabled);
+  const adSenseEnabled = adSenseEnabledForStaticOutput();
+  const result = checkStaticOutput(resolve('out'), gaEnabled, adSenseEnabled);
   result.errors.forEach((error) => console.error(error));
   if (result.errors.length) process.exitCode = 1;
-  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (9 calculators, 5 policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}.`);
+  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (9 calculators, 5 policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
 }

@@ -38,7 +38,8 @@ export function CalculatorClient({ slug }: { slug: string }) {
   }
 
   return <>
-    <CalculatorForm fields={definition.fields} onValuesChange={() => { start(); setResult(null); }} onReset={() => {
+    <div className="calculator-workspace-grid">
+      <CalculatorForm fields={definition.fields} onValuesChange={() => { start(); setResult(null); }} onReset={() => {
       setResult(null); setShareStatus(''); started.current = false; trackCalculatorEvent('calculator_reset', slug);
     }} onCalculate={(raw) => {
       start(); trackCalculatorEvent('calculator_submit', slug);
@@ -48,11 +49,12 @@ export function CalculatorClient({ slug }: { slug: string }) {
       } catch (error) {
         setResult(null); trackCalculatorEvent('calculator_result', slug, { result_type: 'error' }); throw error;
       }
-    }} />
-    <ResultPanel result={result} onCopy={() => trackCalculatorEvent('share', slug, { source: 'copy_result' })}>
+      }} />
+      <ResultPanel result={result} onCopy={() => trackCalculatorEvent('share', slug, { source: 'copy_result' })}>
       {result?.schedules?.map((schedule) => <RepaymentTable key={schedule.title} caption={`${schedule.title} 월별 상환 일정`} rows={schedule.rows} />)}
       {result?.savingsRows && <div className="table-scroll" role="region" aria-label="월별 누적 추이" tabIndex={0}><table><caption>월별 누적 추이 · 월 복리 · 매월 말 납입</caption><thead><tr><th scope="col">개월</th><th scope="col">납입액</th><th scope="col">이자</th><th scope="col">잔액</th></tr></thead><tbody>{result.savingsRows.map((row) => <tr key={row.month}><th scope="row">{row.month}</th><td>{formatWon(row.contribution)}</td><td>{formatWon(row.interest)}</td><td>{formatWon(row.balance)}</td></tr>)}</tbody></table></div>}
-    </ResultPanel>
+      </ResultPanel>
+    </div>
     <button type="button" className="button-secondary" onClick={shareLink}>페이지 링크 복사</button>
     <p role="status" className="copy-status">{shareStatus}</p>
     <p className="field-hint">입력값은 이 브라우저에서만 계산합니다. 금액은 원 단위 반올림, 수량은 소수점 둘째 자리까지 표시합니다.</p>

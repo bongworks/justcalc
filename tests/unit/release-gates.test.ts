@@ -77,7 +77,11 @@ describe('static output gate', () => {
   it('rejects GA script in a release without a measurement ID', () => {
     expect(validateStaticPage(html.replace('</head>', '<script id="ga-bootstrap">window.gtag()</script></head>'), page, false)).toContain(`${page.route}: GA must be absent without a measurement ID`);
   });
-  it('permits GA when a measurement ID is configured', () => {
+  it('rejects the automatic advertising loader without a publisher ID', () => {
+    const fixture = html.replace('</head>', '<script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1234567890123456"></script></head>');
+    expect(validateStaticPage(fixture, page, false, false)).toContain(`${page.route}: AdSense must be absent without a publisher ID`);
+  });
+  it('permits configured GA and AdSense static output', () => {
     const gaEnabled = (staticOutputGate as typeof staticOutputGate & {
       gaEnabledForStaticOutput?: (measurementId: string, args: string[]) => boolean;
     }).gaEnabledForStaticOutput;
@@ -87,6 +91,15 @@ describe('static output gate', () => {
     expect(gaEnabled('G-TEST123456', [])).toBe(true);
     expect(gaEnabled('', [])).toBe(false);
     expect(gaEnabled('', ['--ga-fixture'])).toBe(true);
+    const adSenseEnabled = (staticOutputGate as typeof staticOutputGate & {
+      adSenseEnabledForStaticOutput?: (clientId: string, args: string[]) => boolean;
+    }).adSenseEnabledForStaticOutput;
+    expect(adSenseEnabled).toBeTypeOf('function');
+    if (!adSenseEnabled) return;
+    expect(adSenseEnabled('ca-pub-1234567890123456', [])).toBe(true);
+    expect(adSenseEnabled('not-a-publisher-id', [])).toBe(false);
+    expect(adSenseEnabled('', [])).toBe(false);
+    expect(adSenseEnabled('', ['--adsense-fixture'])).toBe(true);
   });
   it('rejects missing or input-bearing social image metadata', () => {
     expect(validateStaticPage(html.replace('property="og:image"', 'property="og:other"'), page, false)).toContain(`${page.route}: canonical social image is required`);
