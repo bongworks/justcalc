@@ -12,6 +12,7 @@ describe('M2 release deployment configuration', () => {
     expect(workflow).toMatch(/workflow_dispatch:/);
     expect(workflow).toMatch(/runs-on: \[self-hosted, bongbong-MacBookPro-M2\]/);
     expect(workflow).toMatch(/NEXT_PUBLIC_GA_MEASUREMENT_ID: \$\{\{ vars\.NEXT_PUBLIC_GA_MEASUREMENT_ID \}\}/);
+    expect(workflow).toMatch(/NEXT_PUBLIC_ADSENSE_CLIENT_ID: \$\{\{ vars\.NEXT_PUBLIC_ADSENSE_CLIENT_ID \}\}/);
   });
 
   it('atomically switches the static release and restores the previous release after a failed health check', () => {

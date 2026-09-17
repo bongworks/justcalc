@@ -97,6 +97,7 @@ describe('static output gate', () => {
     expect(adSenseEnabled).toBeTypeOf('function');
     if (!adSenseEnabled) return;
     expect(adSenseEnabled('ca-pub-1234567890123456', [])).toBe(true);
+    expect(adSenseEnabled('not-a-publisher-id', [])).toBe(false);
     expect(adSenseEnabled('', [])).toBe(false);
     expect(adSenseEnabled('', ['--adsense-fixture'])).toBe(true);
   });

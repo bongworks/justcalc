@@ -80,7 +80,7 @@ export function gaEnabledForStaticOutput(measurementId = process.env.NEXT_PUBLIC
 }
 
 export function adSenseEnabledForStaticOutput(clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID, args = process.argv) {
-  return Boolean(clientId) || args.includes('--adsense-fixture');
+  return /^ca-pub-\d{10,24}$/.test(clientId) || args.includes('--adsense-fixture');
 }
 
 export function checkStaticOutput(directory = resolve('out'), gaEnabled = false, adSenseEnabled = false) {
