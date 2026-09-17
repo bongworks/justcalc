@@ -13,8 +13,8 @@ export default function Home() {
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebSite', name: siteName, url: getSiteOrigin() + '/', description: homePage.description, inLanguage: 'ko' }} />
       <JsonLd data={webPageData(homePage)} />
       <section className="hero" aria-labelledby="home-title">
-        <p className="eyebrow">생활에 필요한 비용을 빠르게</p>
-        <h1 id="home-title">차를 사고 유지하고, 돈을 빌리고 모을 때 드는 실제 비용을 한눈에 계산합니다.</h1>
+        <p className="eyebrow">일상에 필요한 계산을 빠르게</p>
+        <h1 id="home-title">차량 비용부터 생활비, 급여, 세금, 건강까지 필요한 계산을 한곳에서.</h1>
         <p>로그인이나 개인정보 입력 없이, 필요한 값만 직접 넣어 보세요. 모든 계산은 이 브라우저에서만 처리됩니다.</p>
       </section>
       <div className="calculator-discovery">

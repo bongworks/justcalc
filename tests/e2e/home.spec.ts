@@ -7,14 +7,14 @@ test('홈에서 바로계산기와 자동차 계산기 진입점을 보여준다
 
   await expect(page).toHaveTitle(/바로계산기/);
   await expect(
-    page.getByRole('heading', { level: 1, name: /차를 사고 유지하고/ }),
+    page.getByRole('heading', { level: 1, name: /차량 비용부터 생활비/ }),
   ).toBeVisible();
   await expect(page.getByRole('searchbox', { name: '계산기 검색' })).toBeVisible();
   await expect(page.locator('.calculator-directory').getByRole('link', { name: /자동차 유지비 계산기/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: '자동차', exact: true })).toHaveAttribute('href', '/car/');
-  await expect(page.getByRole('link', { name: '금융', exact: true })).toHaveAttribute('href', '/finance/');
-  await expect(page.getByRole('link', { name: '생활·날짜', exact: true })).toHaveAttribute('href', '/life/');
-  await expect(page.getByRole('link', { name: '교육·단위', exact: true })).toHaveAttribute('href', '/education/');
+  await expect(page.getByRole('link', { name: '자동차', exact: true })).toHaveAttribute('href', '#car');
+  await expect(page.getByRole('link', { name: '금융', exact: true })).toHaveAttribute('href', '#finance');
+  await expect(page.getByRole('link', { name: '생활·날짜', exact: true })).toHaveAttribute('href', '#life');
+  await expect(page.getByRole('link', { name: '교육·단위', exact: true })).toHaveAttribute('href', '#education');
 });
 
 test('home groups every calculator into visible category cards', async ({ page }) => {
@@ -85,9 +85,9 @@ test('home directory has no horizontal overflow at 375px', async ({ page, isMobi
   expect(await page.evaluate(() => ({ width: window.innerWidth, fits: document.documentElement.scrollWidth <= window.innerWidth }))).toEqual({ width: 375, fits: true });
 });
 
-test('home category title links offer 44px touch targets', async ({ page }) => {
+test('home category hub links offer 44px touch targets', async ({ page }) => {
   await page.goto('/');
-  const links = page.locator('.category-card h3 a');
+  const links = page.locator('.category-card .category-hub-link');
   await expect(links).toHaveCount(8);
   for (const link of await links.all()) {
     const box = await link.boundingBox();

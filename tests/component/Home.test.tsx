@@ -14,6 +14,7 @@ it('renders popular and recently added discovery links in static HTML without br
   const initialUrl = location.href;
   render(<div dangerouslySetInnerHTML={{ __html: renderToStaticMarkup(<Home />) }} />);
 
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('차량 비용부터 생활비, 급여, 세금, 건강까지 필요한 계산을 한곳에서.');
   const popular = screen.getByRole('region', { name: '인기 계산기' });
   const recent = screen.getByRole('region', { name: '최근 추가한 계산기' });
   expect(within(popular).getByRole('heading', { level: 2, name: '인기 계산기' })).toBeVisible();
