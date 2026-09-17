@@ -69,6 +69,7 @@ const reviewedYear = { label: '기준연도', value: '2026년 · 검토일 2026-
 const benefitRows = (assumption: string): ReadonlyArray<ResultValue> => [reviewedYear, { label: '계산 가정', value: assumption }, { label: '실제 지급·수급 자격', value: '근로·고용보험·휴직 등 실제 요건은 별도 확인' }];
 const manualRate = (name: string, label: string) => number(name, label, '%', '', rate, '수동 설정 · 0~100%');
 const manualMoney = (name: string, label: string) => number(name, label, '원', '', money, '수동 설정 · 0원 이상');
+const formattedPercentValue = (value: Decimal.Value) => `${formatNumber(value).replace(/(?:\.0+|(?:(\.\d*?)0+))$/, '$1')}%`;
 
 function define<I, O>(slug: typeof calculators[number]['slug'], fields: ReadonlyArray<CalculatorField>, parse: (raw: Raw) => I, calculate: (input: I) => O, present: (output: O) => DisplayResult): RegisteredCalculator & CalculatorDefinition<I, O> {
   const entry = calculators.find((calculator) => calculator.slug === slug)!;
@@ -170,7 +171,7 @@ const parentalLeave = define('parental-leave-benefit', [number('ordinaryMonthlyW
 
 const negotiation = define('salary-negotiation', [number('currentAnnualWon', '현재 연봉', '원', '40000000'), number('desiredAnnualWon', '목표 연봉', '원', '44000000')],
   (raw) => ({ currentAnnualWon: money(raw.currentAnnualWon), desiredAnnualWon: money(raw.desiredAnnualWon) }), calculateSalaryNegotiation,
-  (result) => ({ summary: won('연봉 차이', result.annualIncreaseWon), rows: [won('월 차이', result.monthlyIncreaseWon), { label: '연봉 인상률', value: formatPercent(result.increasePercent) }, { label: '계산 가정', value: '연봉을 12개월에 균등 배분해 비교' }] }));
+  (result) => ({ summary: won('연봉 차이', result.annualIncreaseWon), rows: [won('월 차이', result.monthlyIncreaseWon), { label: '연봉 인상률', value: formattedPercentValue(result.increasePercent) }, { label: '계산 가정', value: '연봉을 12개월에 균등 배분해 비교' }] }));
 
 const freelancer = define('freelancer-withholding', [number('grossWon', '총 수입', '원', '1000000'), number('deductibleExpenseWon', '차감 경비', '원', '200000'), manualRate('withholdingRatePercent', '원천징수율')],
   (raw) => ({ grossWon: money(raw.grossWon), deductibleExpenseWon: money(raw.deductibleExpenseWon), withholdingRatePercent: rate(raw.withholdingRatePercent) }), calculateFreelancerWithholding,

@@ -33,3 +33,14 @@ it('registers salary calculators with the canonical salary route and an estimate
   });
   expect(getCalculatorBySlug('take-home-pay')?.guide.limitations.join(' ')).toMatch(/예상/);
 });
+
+it.each([
+  ['40000000', '44000000', '10%'],
+  ['40000000', '36000000', '-10%'],
+  ['0', '12000000', '0%'],
+])('renders a finite signed salary-negotiation increase rate for %s to %s', (currentAnnualWon, desiredAnnualWon, expectedRate) => {
+  const result = getCalculatorBySlug('salary-negotiation')!.evaluate({ currentAnnualWon, desiredAnnualWon });
+
+  expect(result.rows).toContainEqual({ label: '연봉 인상률', value: expectedRate });
+  expect(result.rows.find((row) => row.label === '연봉 인상률')?.value).not.toMatch(/NaN|Infinity/);
+});
