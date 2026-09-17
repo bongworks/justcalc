@@ -27,8 +27,9 @@ export function ResultPanel({ result, children, onCopy }: { result: CalculatorRe
   }
 
   return (
-    <section className={result ? 'result-panel' : undefined} aria-labelledby={result ? `${id}-title` : undefined}>
+    <section className="result-panel" aria-labelledby={result ? `${id}-title` : undefined}>
       {result && <h2 id={`${id}-title`}>계산 결과</h2>}
+      {!result && <p className="result-empty">입력한 조건으로 계산 결과를 확인하세요.</p>}
       <div className="result-summary" aria-live="polite" aria-atomic="true">
         {result && <><p>{result.summary.label}</p><p className="result-value">{result.summary.value}</p></>}
       </div>

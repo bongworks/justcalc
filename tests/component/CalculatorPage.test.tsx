@@ -28,6 +28,9 @@ it('renders the guide and valid related routes around an independently resettabl
   const user = userEvent.setup();
   render(<CalculatorPage definition={definition}><Calculation /></CalculatorPage>);
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('유류비·연비 계산기');
+  expect(screen.getByRole('heading', { name: '계산 조건' })).toBeVisible();
+  expect(screen.getByText('입력한 조건으로 계산 결과를 확인하세요.')).toBeVisible();
+  expect(screen.queryByLabelText('광고')).not.toBeInTheDocument();
   expect(screen.getByText(definition.guide.formula)).toBeVisible();
   expect(screen.getByRole('heading', { name: '300km 운행' })).toBeVisible();
   expect(screen.getByRole('heading', { name: '100km 운행' })).toBeVisible();
@@ -36,6 +39,7 @@ it('renders the guide and valid related routes around an independently resettabl
   expect(screen.getByRole('navigation', { name: '현재 위치' })).toHaveTextContent('자동차');
   await user.type(screen.getByRole('textbox'), '300{Enter}');
   expect(screen.getByText('51000원')).toBeVisible();
+  expect(screen.queryByLabelText('광고')).not.toBeInTheDocument();
   await user.type(screen.getByRole('textbox'), '0');
   expect(screen.queryByText('51000원')).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '계산하기' }));

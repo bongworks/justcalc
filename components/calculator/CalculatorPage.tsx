@@ -19,7 +19,7 @@ export function CalculatorPage<I, O>({ definition, children }: { definition: Cal
       ] }} />
       <Breadcrumbs items={[{ label: '홈', href: '/' }, { label: categoryLabels[definition.category], href: `/#${definition.category}` }, { label: definition.title }]} />
       <header className="calculator-heading"><h1>{definition.title}</h1><p>{definition.description}</p></header>
-      <div className="calculator-workspace">{children}</div>
+      <section className="calculator-workspace" aria-label="계산기">{children}</section>
       <CalculatorGuide guide={definition.guide} lastReviewed={definition.lastReviewed} />
       <RelatedCalculators slugs={definition.relatedSlugs} />
     </article>

@@ -10,6 +10,7 @@ const result = { summary: { label: '예상 유류비', value: '51,000원' }, row
 it('shows a successful summary once in a persistent polite live region', () => {
   const { rerender, container } = render(<ResultPanel result={null} />);
   expect(screen.queryByRole('heading', { name: '계산 결과' })).not.toBeInTheDocument();
+  expect(screen.getByText('입력한 조건으로 계산 결과를 확인하세요.')).toBeVisible();
   expect(container.querySelector('[aria-live="polite"]')).toBeEmptyDOMElement();
   rerender(<ResultPanel result={result} />);
   expect(screen.getAllByText('51,000원')).toHaveLength(1);
