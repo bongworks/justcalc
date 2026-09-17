@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { scanSource } from '../../scripts/check-no-input-leak.mjs';
 import { checkStaticOutput, validateStaticPage } from '../../scripts/check-static-output.mjs';
+import * as staticOutputGate from '../../scripts/check-static-output.mjs';
 
 describe('privacy source gate', () => {
   it.each([
@@ -75,6 +76,17 @@ describe('static output gate', () => {
   });
   it('rejects GA script in a release without a measurement ID', () => {
     expect(validateStaticPage(html.replace('</head>', '<script id="ga-bootstrap">window.gtag()</script></head>'), page, false)).toContain(`${page.route}: GA must be absent without a measurement ID`);
+  });
+  it('permits GA when a measurement ID is configured', () => {
+    const gaEnabled = (staticOutputGate as typeof staticOutputGate & {
+      gaEnabledForStaticOutput?: (measurementId: string, args: string[]) => boolean;
+    }).gaEnabledForStaticOutput;
+
+    expect(gaEnabled).toBeTypeOf('function');
+    if (!gaEnabled) return;
+    expect(gaEnabled('G-TEST123456', [])).toBe(true);
+    expect(gaEnabled('', [])).toBe(false);
+    expect(gaEnabled('', ['--ga-fixture'])).toBe(true);
   });
   it('rejects missing or input-bearing social image metadata', () => {
     expect(validateStaticPage(html.replace('property="og:image"', 'property="og:other"'), page, false)).toContain(`${page.route}: canonical social image is required`);
