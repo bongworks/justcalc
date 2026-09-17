@@ -1,5 +1,7 @@
 import type { CalculatorCatalogEntry } from '@/lib/calculators/types';
 
+// Append new entries: home discovery uses registration order for recent additions.
+// Presentation by category belongs in the directory, not this catalog's order.
 export const calculators = [
   {
     slug: 'maintenance-cost',

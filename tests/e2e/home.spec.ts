@@ -10,7 +10,7 @@ test('홈에서 바로계산기와 자동차 계산기 진입점을 보여준다
     page.getByRole('heading', { level: 1, name: /차를 사고 유지하고/ }),
   ).toBeVisible();
   await expect(page.getByRole('searchbox', { name: '계산기 검색' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /자동차 유지비 계산기/ })).toBeVisible();
+  await expect(page.locator('.calculator-directory').getByRole('link', { name: /자동차 유지비 계산기/ })).toBeVisible();
   await expect(page.getByRole('link', { name: '자동차', exact: true })).toHaveAttribute('href', '/car/');
   await expect(page.getByRole('link', { name: '금융', exact: true })).toHaveAttribute('href', '/finance/');
   await expect(page.getByRole('link', { name: '생활·날짜', exact: true })).toHaveAttribute('href', '/life/');
@@ -65,7 +65,7 @@ test('home search filters locally without requests, URL state, or storage', asyn
   page.on('request', record);
 
   const search = page.getByRole('searchbox', { name: '계산기 검색' });
-  for (let step = 0; step < 10 && !(await search.evaluate((element) => element === document.activeElement)); step++) {
+  for (let step = 0; step < 30 && !(await search.evaluate((element) => element === document.activeElement)); step++) {
     await page.keyboard.press('Tab');
   }
   await expect(search).toBeFocused();
@@ -83,4 +83,36 @@ test('home directory has no horizontal overflow at 375px', async ({ page, isMobi
   test.skip(!isMobile);
   await page.goto('/');
   expect(await page.evaluate(() => ({ width: window.innerWidth, fits: document.documentElement.scrollWidth <= window.innerWidth }))).toEqual({ width: 375, fits: true });
+});
+
+test('home category title links offer 44px touch targets', async ({ page }) => {
+  await page.goto('/');
+  const links = page.locator('.category-card h3 a');
+  await expect(links).toHaveCount(8);
+  for (const link of await links.all()) {
+    const box = await link.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('static discovery sections link to calculators without JavaScript', async ({ browser, baseURL, isMobile }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: isMobile ? { width: 375, height: 812 } : { width: 1280, height: 720 } });
+  const page = await context.newPage();
+  await page.goto('/');
+  for (const name of ['인기 계산기', '최근 추가한 계산기']) {
+    const section = page.getByRole('region', { name, exact: true });
+    await expect(section.getByRole('heading', { level: 2, name })).toBeVisible();
+    await expect(section.getByRole('link')).toHaveCount(6);
+    for (const link of await section.getByRole('link').all()) {
+      const box = await link.boundingBox();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  }
+  await page.getByRole('region', { name: '최근 추가한 계산기' }).getByRole('link', { name: '수동 시차 비교 계산기' }).click();
+  await expect(page).toHaveURL('/education/time-zone-comparison/');
+  await expect(page.getByRole('heading', { level: 1, name: '수동 시차 비교 계산기' })).toBeVisible();
+  await context.close();
 });

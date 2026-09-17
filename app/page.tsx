@@ -1,6 +1,7 @@
 import { CalculatorDirectory } from '@/components/content/CalculatorDirectory';
 import { calculatorCatalog } from '@/lib/calculators/registry';
 import { calculatorCategories } from '@/lib/calculators/categories';
+import { calculatorDiscovery } from '@/lib/calculators/discovery';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getSiteOrigin, homePage, pageMetadata, siteName, webPageData } from '@/lib/seo/site';
 
@@ -16,6 +17,19 @@ export default function Home() {
         <h1 id="home-title">차를 사고 유지하고, 돈을 빌리고 모을 때 드는 실제 비용을 한눈에 계산합니다.</h1>
         <p>로그인이나 개인정보 입력 없이, 필요한 값만 직접 넣어 보세요. 모든 계산은 이 브라우저에서만 처리됩니다.</p>
       </section>
+      <div className="calculator-discovery">
+        {calculatorDiscovery.map((section) => (
+          <section key={section.id} aria-labelledby={section.id}>
+            <h2 id={section.id}>{section.title}</h2>
+            <p>{section.description}</p>
+            <ul>
+              {section.calculators.map((calculator) => (
+                <li key={calculator.slug}><h3><a href={calculator.route}>{calculator.title}</a></h3></li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
       <section aria-labelledby="category-title">
         <h2 id="category-title">어떤 계산이 필요한가요?</h2>
         <CalculatorDirectory calculators={calculatorCatalog} categories={calculatorCategories} />

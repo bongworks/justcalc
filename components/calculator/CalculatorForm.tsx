@@ -1,7 +1,8 @@
 'use client';
 
 import Decimal from 'decimal.js';
-import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { CalculatorEvaluationError } from '@/lib/calculators/errors';
 
 const subscribe = () => () => {};
 const clientReady = () => true;
@@ -51,9 +52,11 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
   // Native form submission must stay disabled until preventDefault is attached.
   const ready = useSyncExternalStore(subscribe, clientReady, serverReady);
   const formRef = useRef<HTMLFormElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const [values, setValues] = useState(() => initialValues(fields));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
+  useEffect(() => { if (formError) errorRef.current?.focus(); }, [formError]);
   const visibleFields = fields.filter((field) => !field.visibleWhen || values[field.visibleWhen.field] === field.visibleWhen.value);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -73,8 +76,12 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
     }
     try {
       onCalculate({ ...values });
-    } catch {
-      setFormError('입력값을 확인해 주세요. 계산 가능한 범위와 입력 안내를 확인한 뒤 다시 계산해 주세요.');
+    } catch (error) {
+      setFormError(error instanceof CalculatorEvaluationError && error.message.trim()
+        ? error.message
+        : '입력값을 확인해 주세요. 계산 가능한 범위와 입력 안내를 확인한 뒤 다시 계산해 주세요.');
+      // The effect handles first render; refocus even when the reason is unchanged.
+      errorRef.current?.focus();
     }
   }
 
@@ -94,7 +101,7 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
       onReset?.();
     }}>
       <div className="calculator-form-heading"><h2>계산 조건</h2><p>필요한 항목만 입력한 뒤 계산하기를 눌러 주세요.</p></div>
-      <fieldset className="calculator-fields" disabled={!ready} aria-label="계산값 입력">
+      <fieldset className="calculator-fields" disabled={!ready} aria-label="계산값 입력" aria-invalid={formError ? true : undefined} aria-describedby={formError ? `${id}-form-error` : undefined}>
       <div className="field-grid">
         {visibleFields.map((field) => {
           const fieldId = `${id}-${field.name}`;
@@ -119,7 +126,7 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
           );
         })}
       </div>
-      {formError && <p className="field-error" role="alert">{formError}</p>}
+      {formError && <p ref={errorRef} id={`${id}-form-error`} className="field-error" role="alert" tabIndex={-1}>{formError}</p>}
       <div className="form-actions">
         <button className="button-primary" type="submit">계산하기</button>
         <button className="button-secondary" type="reset">초기화</button>

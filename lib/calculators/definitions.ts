@@ -5,6 +5,7 @@ import type { CalculatorResult, ResultValue } from '@/components/calculator/Resu
 import type { CalculatorCatalogEntry, CalculatorDefinition } from './types';
 import { parseMoney, parseNonNegativeDecimal, parsePositiveDecimal } from './validation';
 import { formatNumber, formatPercent, formatWon } from './format';
+import { CalculatorEvaluationError } from './errors';
 import { calculateFuelCost } from '@/lib/car/fuel';
 import { calculateEvChargingCost } from '@/lib/car/ev';
 import { calculateMaintenanceCost, type MaintenanceInput } from '@/lib/car/maintenance';
@@ -87,7 +88,18 @@ const formattedPercentValue = (value: Decimal.Value) => `${formatNumber(value).r
 
 function define<I, O>(slug: typeof calculators[number]['slug'], fields: ReadonlyArray<CalculatorField>, parse: (raw: Raw) => I, calculate: (input: I) => O, present: (output: O) => DisplayResult): RegisteredCalculator & CalculatorDefinition<I, O> {
   const entry = calculators.find((calculator) => calculator.slug === slug)!;
-  return { ...entry, fields, parse, calculate, evaluate: (raw) => present(calculate(parse(raw))) };
+  return { ...entry, fields, parse, calculate, evaluate: (raw) => {
+    try {
+      return present(calculate(parse(raw)));
+    } catch (error) {
+      // Local validation uses plain Errors with Korean guidance; runtime errors
+      // such as TypeError remain unclassified and receive the generic fallback.
+      if (error instanceof Error && error.constructor === Error) {
+        throw new CalculatorEvaluationError(error.message);
+      }
+      throw error;
+    }
+  } };
 }
 
 const fuel = define('fuel-cost', [number('distanceKm', '주행거리', 'km', '420', nonnegative, ''), number('efficiencyKmPerLitre', '연비', 'km/L', '14', positive, ''), number('wonPerLitre', '유종 단가', '원/L', '1700')],
