@@ -1,6 +1,6 @@
 import { calculators } from '@/content/calculators';
 import type { CalculatorCatalogEntry } from '@/lib/calculators/types';
-import type { CalculatorCategory } from '@/lib/calculators/types';
+import type { CalculatorCategory } from '@/lib/calculators/categories';
 import { calculatorDefinitions } from '@/lib/calculators/definitions';
 
 export const calculatorCatalog: ReadonlyArray<CalculatorCatalogEntry> = calculators;
@@ -15,9 +15,11 @@ export function getCalculatorByRoute(route: string) {
   return calculatorByRoute.get(route);
 }
 
-export function getCalculatorsByCategory(category: CalculatorCategory) {
+export function getCategoryCalculators(category: CalculatorCategory) {
   return calculatorDefinitions.filter((calculator) => calculator.category === category);
 }
+
+export const getCalculatorsByCategory = getCategoryCalculators;
 
 export function getCalculatorByCategoryAndSlug(category: CalculatorCategory, slug: string) {
   const calculator = getCalculatorBySlug(slug);
