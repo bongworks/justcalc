@@ -581,4 +581,310 @@ export const calculators = [
       sources: [{ label: '한국소비자원 · 가격 비교 참고', href: 'https://www.kca.go.kr/' }],
     },
   },
+  {
+    slug: 'lease-vs-purchase', category: 'car', route: '/car/lease-vs-purchase/', title: '리스·구매 비교 계산기',
+    description: '같은 이용 기간의 구매 월 비용과 잔존가치, 리스 초기비·월 비용을 비교합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['rental-vs-lease', 'total-ownership-cost'],
+    guide: {
+      formula: '구매 순비용 = 구매 월 비용 × 개월 - 잔존가치; 리스 비용 = 초기비 + 월 비용 × 개월; 차이 = 구매 - 리스',
+      examples: [{ title: '24개월 비교', text: '구매 월 50만원·잔존가치 300만원이면 순비용 900만원입니다. 리스 초기비 100만원·월 40만원이면 1,060만원으로 차이는 -160만원입니다.' }, { title: '잔존가치가 없는 가정', text: '구매 월 60만원, 리스 월 50만원·초기비 0원, 12개월, 잔존가치 0원이면 구매 720만원과 리스 600만원의 차이는 120만원입니다.' }],
+      limitations: ['구매 월 비용에 초기 취득비를 기간으로 나눈 금액과 포함할 비용을 직접 반영하세요. 잔존가치는 마지막에 한 번 차감합니다.', '보증금 반환, 세금 효과, 중도 해지, 금리와 보험 차이는 자동 반영하지 않습니다. 음수 차이는 구매 비용이 더 작다는 뜻입니다.'],
+      sources: [{ label: '국토교통부 자동차365 · 차량 비용 확인', href: 'https://www.car365.go.kr/' }],
+    },
+  },
+  {
+    slug: 'rental-vs-lease', category: 'car', route: '/car/rental-vs-lease/', title: '렌트·리스 비교 계산기',
+    description: '동일한 개월 수에서 렌트와 리스의 월 비용 합계 차이를 비교합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['lease-vs-purchase', 'maintenance-cost'],
+    guide: {
+      formula: '총비용 = 월 비용 × 이용 개월; 차이 = 렌트 총비용 - 리스 총비용',
+      examples: [{ title: '24개월 이용', text: '렌트 월 50만원, 리스 월 40만원이면 각각 1,200만원과 960만원이며 차이는 240만원입니다.' }, { title: '같은 월 비용', text: '렌트와 리스가 모두 월 60만원이고 36개월이면 각각 2,160만원으로 차이는 0원입니다.' }],
+      limitations: ['초기비와 보증금, 잔존가치, 반납 조건은 제외됩니다. 월 비용에 포함된 보험·정비 범위를 먼저 맞추세요.', '실제 계약 견적의 유불리나 세무상 효과를 판단하지 않습니다.'], sources: [{ label: '한국소비자원 · 자동차 계약 참고', href: 'https://www.kca.go.kr/' }],
+    },
+  },
+  {
+    slug: 'depreciation', category: 'car', route: '/car/depreciation/', title: '자동차 감가상각 계산기',
+    description: '구매가와 예상 잔존가치 차이를 보유 기간에 균등 배분합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['total-ownership-cost', 'lease-vs-purchase'],
+    guide: {
+      formula: '월 감가액 = (구매가 - 잔존가치) ÷ 보유 개월',
+      examples: [{ title: '5년 보유', text: '3,000만원에 구입해 60개월 뒤 1,800만원으로 예상하면 가치 감소액 1,200만원, 월 감가액 20만원입니다.' }, { title: '가치가 오른 경우', text: '구매가 1,000만원, 잔존가치 1,200만원, 20개월이면 월 감가액 -10만원으로 입력한 가치 상승을 표시합니다.' }],
+      limitations: ['잔존가치는 직접 입력하는 가정이며 중고차 시세 예측이 아닙니다.', '세무 감가상각이나 기간별 실제 가치 변화, 금융비용을 반영하지 않습니다.'], sources: [{ label: '국토교통부 자동차365 · 중고차 정보', href: 'https://www.car365.go.kr/' }],
+    },
+  },
+  {
+    slug: 'total-ownership-cost', category: 'car', route: '/car/total-ownership-cost/', title: '자동차 총보유비용 계산기',
+    description: '구매 총비용과 연간 운용비에서 예상 매각액을 빼 보유 기간의 순비용을 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['maintenance-cost', 'depreciation'],
+    guide: {
+      formula: '총보유비용 = 구매 총비용 + 연간 운용비 × 보유 연수 - 매각액',
+      examples: [{ title: '5년 순비용', text: '구매 3,000만원, 운용비 연 300만원, 5년 뒤 매각 1,500만원이면 총보유비용은 3,000만원입니다.' }, { title: '매각액 미반영', text: '구매 2,000만원, 연 운용비 200만원, 3년, 매각액 0원이면 총보유비용은 2,600만원입니다.' }],
+      limitations: ['운용비가 매년 같다고 가정하며 물가·할인율은 반영하지 않습니다.', '할부 이자·보험·세금 등 포함할 비용은 구매비나 운용비에 중복 없이 직접 반영하세요.'], sources: [{ label: '국토교통부 자동차365 · 차량 비용 확인', href: 'https://www.car365.go.kr/' }],
+    },
+  },
+  {
+    slug: 'highway-toll-budget', category: 'car', route: '/car/highway-toll-budget/', title: '고속도로 통행료 예산 계산기',
+    description: '확인한 편도 통행료와 왕복 횟수로 전체 통행료 예산을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['fuel-cost', 'maintenance-cost'],
+    guide: {
+      formula: '통행료 예산 = 편도 통행료 × 2 × 왕복 횟수',
+      examples: [{ title: '월 20회 왕복', text: '편도 5,000원인 구간을 20회 왕복하면 20만원입니다.' }, { title: '휴가 왕복 1회', text: '편도 12,500원을 1회 왕복하면 25,000원입니다. 왕복 횟수 0회는 0원입니다.' }],
+      limitations: ['경로·차종에 따른 통행료는 직접 확인해야 하며 실시간 조회하지 않습니다.', '왕복 요금이 같다고 가정합니다. 시간대·차량 할인은 입력한 편도 요금에만 반영됩니다.'], sources: [{ label: '한국도로공사 · 통행요금 확인', href: 'https://www.ex.co.kr/' }],
+    },
+  },
+  {
+    slug: 'bmi', category: 'health', route: '/health/bmi/', title: 'BMI 계산기',
+    description: '체중과 키로 체질량지수를 계산하고 수치의 한계를 확인합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['target-weight', 'bmr'],
+    guide: {
+      formula: 'BMI = 체중(kg) ÷ 키(m)의 제곱',
+      examples: [{ title: '70kg과 175cm', text: '70 ÷ 1.75²로 계산한 BMI는 소수점 둘째 자리에서 22.86입니다.' }, { title: '60kg과 160cm', text: '60 ÷ 1.6²로 계산하면 BMI는 23.44입니다. 같은 수치라도 개인의 건강 상태는 다를 수 있습니다.' }],
+      limitations: ['성인의 일반적인 참고 산식이며 의료 조언·진단이 아닙니다. 소아·청소년, 임신부, 운동선수에게 단순 적용하지 마세요.', '근육량·체지방 분포를 구분하지 않으며 비만도 분류나 건강 상태를 판정하지 않습니다.'],
+      sources: [{ label: 'CDC · 성인 BMI 산식과 한계', href: 'https://www.cdc.gov/bmi/adult-calculator/index.html' }],
+    },
+  },
+  {
+    slug: 'bmr', category: 'health', route: '/health/bmr/', title: '기초대사량 계산기',
+    description: '성인의 체중·키·나이와 성별 계수로 Mifflin-St Jeor 대사량을 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['daily-calories', 'bmi'],
+    guide: {
+      formula: '추정 kcal/일 = 10 × 체중(kg) + 6.25 × 키(cm) - 5 × 만 나이 + 성별 계수(남성 5, 여성 -161)',
+      examples: [{ title: '남성 계수', text: '70kg, 175cm, 30세, 남성 계수이면 1,648.75kcal/일입니다.' }, { title: '여성 계수', text: '60kg, 160cm, 30세, 여성 계수이면 1,289kcal/일입니다.' }],
+      limitations: ['성인 참고 추정이며 의료 조언·진단·섭취량 처방이 아닙니다. 실제 측정 기초대사량과 다릅니다.', '원 논문의 안정시 에너지 소비 추정식을 사용합니다. 임신·질환·근육량·개인의 호르몬 상태는 반영하지 않습니다.'],
+      sources: [{ label: 'Mifflin 등 · 원 논문 (1990)', href: 'https://pubmed.ncbi.nlm.nih.gov/2305711/' }],
+    },
+  },
+  {
+    slug: 'daily-calories', category: 'health', route: '/health/daily-calories/', title: '하루 필요 칼로리 계산기',
+    description: '기초대사량에 직접 정한 활동 배수와 목표 조정 열량을 적용합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['bmr', 'macro-nutrients'],
+    guide: {
+      formula: '하루 열량 = 기초대사량 × 입력 활동 배수 + 목표 조정 열량',
+      examples: [{ title: '조정 없는 가정', text: '기초대사량 1,600kcal와 활동 배수 1.5, 조정 0kcal이면 2,400kcal/일입니다. 1.5는 계산 예시이며 권장 배수가 아닙니다.' }, { title: '감소량을 입력한 가정', text: '동일한 1,600kcal와 배수 1.5에 조정 -300kcal를 입력하면 2,100kcal/일입니다. 감량 처방을 의미하지 않습니다.' }],
+      limitations: ['의료 조언·식단 처방이 아닙니다. 활동 배수와 조정량의 적절성은 전문가와 확인하세요.', '개인별 실제 소비 에너지와 다를 수 있으며 0 이하 결과는 표시하지 않습니다.'],
+      sources: [{ label: 'FAO · 인간 에너지 요구량 보고서', href: 'https://www.fao.org/4/y5686e/y5686e00.htm' }],
+    },
+  },
+  {
+    slug: 'macro-nutrients', category: 'health', route: '/health/macro-nutrients/', title: '탄단지 계산기',
+    description: '하루 열량과 직접 정한 영양소 비율을 탄수화물·단백질·지방 그램으로 바꿉니다.', lastReviewed: '2026-09-17', relatedSlugs: ['daily-calories', 'bmr'],
+    guide: {
+      formula: '단백질·탄수화물 g = 열량 × 각 비율 ÷ 100 ÷ 4; 지방 g = 열량 × 비율 ÷ 100 ÷ 9',
+      examples: [{ title: '2,000kcal 배분', text: '단백질 30%, 탄수화물 50%, 지방 20%이면 각각 150g, 250g, 44.44g입니다.' }, { title: '1,800kcal 배분', text: '단백질 20%, 탄수화물 60%, 지방 20%이면 각각 90g, 270g, 40g입니다. 비율은 예시일 뿐 권장이 아닙니다.' }],
+      limitations: ['의료 조언이나 개인별 권장 식단이 아닙니다. 세 비율 합계는 100%로 입력하세요.', '일반적인 4·4·9kcal/g 환산을 사용하며 식이섬유·알코올 및 식품별 흡수 차이는 제외됩니다.'],
+      sources: [{ label: 'FAO · 식품 에너지 환산 계수', href: 'https://www.fao.org/4/y5022e/y5022e00.htm' }],
+    },
+  },
+  {
+    slug: 'target-weight', category: 'health', route: '/health/target-weight/', title: '목표 BMI 체중 계산기',
+    description: '직접 입력한 목표 BMI에 해당하는 체중을 키로 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['bmi', 'daily-calories'],
+    guide: {
+      formula: '입력 BMI에 해당하는 체중(kg) = 키(m)의 제곱 × 목표 BMI',
+      examples: [{ title: '175cm, BMI 22', text: '1.75² × 22로 계산한 체중은 67.38kg입니다. BMI 22는 예시이며 목표 추천이 아닙니다.' }, { title: '160cm, BMI 20', text: '1.6² × 20이면 51.20kg입니다. 몸무게의 적절성은 이 계산만으로 결정하지 않습니다.' }],
+      limitations: ['의료 조언·목표 체중 처방이 아닙니다. BMI 선택과 건강상 적절성은 전문가와 확인하세요.', '체성분·연령·임신 여부와 개인 건강 상태는 반영하지 않습니다.'],
+      sources: [{ label: 'CDC · BMI 산식과 해석 한계', href: 'https://www.cdc.gov/bmi/adult-calculator/index.html' }],
+    },
+  },
+  {
+    slug: 'running-pace', category: 'health', route: '/health/running-pace/', title: '달리기 페이스 계산기',
+    description: '달린 거리와 전체 시간을 입력해 1km당 평균 소요 시간을 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['walking-calories', 'unit-conversion'],
+    guide: {
+      formula: '평균 페이스(초/km) = 전체 시간(초) ÷ 거리(km)',
+      examples: [{ title: '5km 25분', text: '25분은 1,500초이므로 5km로 나누면 300초/km, 즉 1km당 5분입니다.' }, { title: '10km 1시간', text: '3,600초 ÷ 10km = 360초/km로 1km당 6분입니다.' }],
+      limitations: ['단순 평균이며 의료 조언·운동 강도 처방이 아닙니다.', '정지 시간 포함 여부는 사용자가 입력한 시간에 따르며 경사·구간별 속도는 구분하지 않습니다.'],
+      sources: [{ label: 'BIPM · SI 시간·길이 단위', href: 'https://www.bipm.org/en/publications/si-brochure' }],
+    },
+  },
+  {
+    slug: 'walking-calories', category: 'health', route: '/health/walking-calories/', title: '걷기 칼로리 계산기',
+    description: '걷는 거리와 직접 확인한 km당 소비 열량으로 총 소비 열량을 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['running-pace', 'daily-calories'],
+    guide: {
+      formula: '소비 열량(kcal) = 거리(km) × 입력한 km당 소비 열량',
+      examples: [{ title: '5km 가정', text: '5km와 50kcal/km를 입력하면 250kcal입니다. 50은 산술 예시이며 개인별 기준이 아닙니다.' }, { title: '2km 가정', text: '2km와 40kcal/km를 입력하면 80kcal입니다. 기기 추정치의 오차도 함께 남습니다.' }],
+      limitations: ['의료 조언·소비 열량 측정 결과가 아닙니다. kg당 열량이 아닌 km당 값을 입력하세요.', '속도·체중·경사·개인차를 자동 추정하지 않으며 계수는 사용자가 직접 확인합니다.'],
+      sources: [{ label: 'FAO · 신체 활동과 에너지 요구량', href: 'https://www.fao.org/4/y5686e/y5686e00.htm' }],
+    },
+  },
+  {
+    slug: 'water-intake', category: 'health', route: '/health/water-intake/', title: '수분 섭취량 계산기',
+    description: '체중에 직접 정한 mL/kg 계수를 곱해 수분량을 리터로 환산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['bmi', 'daily-calories'],
+    guide: {
+      formula: '수분량(L) = 체중(kg) × 입력한 mL/kg ÷ 1,000',
+      examples: [{ title: '70kg 산술 예시', text: '체중 70kg과 30mL/kg을 입력하면 2.10L입니다. 30은 계산 예시이고 권장 섭취 기준이 아닙니다.' }, { title: '60kg 산술 예시', text: '체중 60kg과 25mL/kg을 입력하면 1.50L입니다. 음식의 수분을 포함할지는 별도 확인해야 합니다.' }],
+      limitations: ['의료 조언·일일 섭취 처방이 아닙니다. 신장·심장 질환 등 수분 제한이 있는 경우 의료진 지침을 따르세요.', '기온·운동·임신·질환·음식 속 수분을 반영하지 않으며 모든 사람에게 맞는 계수를 제공하지 않습니다.'],
+      sources: [{ label: 'CDC · 물과 건강한 음료 안내', href: 'https://www.cdc.gov/healthy-weight-growth/water-healthy-drinks/index.html' }],
+    },
+  },
+  {
+    slug: 'dday', category: 'life', route: '/life/dday/', title: '디데이 계산기',
+    description: '직접 지정한 기준일에서 목표일까지 남거나 지난 날짜 수를 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['date-between', 'date-offset'],
+    guide: {
+      formula: '날짜 차이 = 목표일 - 기준일; 미래는 D-일수, 과거는 D+일수, 같은 날은 D-Day',
+      examples: [{ title: '3일 남은 일정', text: '기준일 2026년 9월 17일, 목표일 9월 20일이면 D-3입니다.' }, { title: '2일 지난 일정', text: '기준일 2026년 9월 17일, 목표일 9월 15일이면 D+2입니다. 같은 날짜는 D-Day입니다.' }],
+      limitations: ['기준일을 0일로 셉니다. 오늘을 자동 조회하지 않으므로 기준일을 확인하세요.', '양력 달력 날짜의 차이만 계산하며 영업일·공휴일·시각·시간대는 반영하지 않습니다.'], sources: [{ label: '미 해군 천문대 · 그레고리력 설명', href: 'https://aa.usno.navy.mil/faq/calendars' }],
+    },
+  },
+  {
+    slug: 'date-between', category: 'life', route: '/life/date-between/', title: '날짜 차이 계산기',
+    description: '시작일과 종료일 사이의 달력 날짜 차이를 윤년까지 반영해 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['dday', 'date-offset'],
+    guide: {
+      formula: '날짜 차이 = 종료일 - 시작일; 같은 날짜는 0일',
+      examples: [{ title: '윤년을 지나는 날짜', text: '2024년 2월 28일부터 3월 1일까지는 2일입니다.' }, { title: '순서가 반대인 날짜', text: '2026년 9월 20일부터 9월 17일까지는 -3일입니다. 시작일을 포함하는 계약 기간과는 다를 수 있습니다.' }],
+      limitations: ['시작일 포함 세기·법정 기간·영업일 계산이 아닙니다.', '양력 날짜만 다루며 시간대나 일광절약시간과 무관한 달력 차이를 사용합니다.'], sources: [{ label: '미 해군 천문대 · 달력과 윤년', href: 'https://aa.usno.navy.mil/faq/calendars' }],
+    },
+  },
+  {
+    slug: 'date-offset', category: 'life', route: '/life/date-offset/', title: '날짜 더하기·빼기 계산기',
+    description: '기준 날짜에 정수 일수를 더하거나 빼서 새 날짜를 확인합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['date-between', 'weekday'],
+    guide: {
+      formula: '결과 날짜 = 기준 날짜 + 입력 일수; 음수는 이전 날짜',
+      examples: [{ title: '윤년 전날', text: '2024년 3월 1일에 -1일을 더하면 2024년 2월 29일입니다.' }, { title: '연말 다음 날', text: '2026년 12월 31일에 1일을 더하면 2027년 1월 1일입니다.' }],
+      limitations: ['월 단위 가산이나 영업일·법정 기한 계산이 아닙니다.', '일수는 정수이며 결과는 0000년부터 9999년 범위의 양력 날짜입니다.'], sources: [{ label: '미 해군 천문대 · 달력 설명', href: 'https://aa.usno.navy.mil/faq/calendars' }],
+    },
+  },
+  {
+    slug: 'weekday', category: 'life', route: '/life/weekday/', title: '요일 계산기',
+    description: '양력 연·월·일을 입력해 해당 달력 날짜의 요일을 확인합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['date-offset', 'dday'],
+    guide: {
+      formula: '그레고리력 날짜를 7일 주기에 대응하여 일요일부터 토요일까지 표시',
+      examples: [{ title: '2026년 9월 17일', text: '2026-09-17을 입력하면 목요일입니다.' }, { title: '2024년 윤일', text: '2024-02-29를 입력하면 목요일입니다. 존재하지 않는 2026-02-29는 계산하지 않습니다.' }],
+      limitations: ['음력 변환과 공휴일 여부는 제공하지 않습니다.', '그레고리력을 과거 날짜에도 일관되게 적용하므로 지역별 역사적 달력 전환은 반영하지 않습니다.'], sources: [{ label: '미 해군 천문대 · 달력 설명', href: 'https://aa.usno.navy.mil/faq/calendars' }],
+    },
+  },
+  {
+    slug: 'international-age', category: 'life', route: '/life/international-age/', title: '만 나이 계산기',
+    description: '출생일과 기준일을 비교해 생일 경과 여부를 반영한 만 나이를 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['korean-age', 'date-between'],
+    guide: {
+      formula: '만 나이 = 기준연도 - 출생연도 - 기준일에 생일이 아직 오지 않았으면 1',
+      examples: [{ title: '생일 하루 전', text: '2000년 9월 18일생은 기준일 2026년 9월 17일에 만 25세입니다.' }, { title: '생일 당일', text: '같은 출생일의 기준일을 2026년 9월 18일로 바꾸면 만 26세입니다.' }],
+      limitations: ['법률별 별도 연령 기준이나 자격 요건을 판단하지 않습니다.', '2월 29일생은 평년 3월 1일부터 나이가 증가하는 달력 비교를 사용합니다. 출생일이 기준일보다 늦으면 계산하지 않습니다.'], sources: [{ label: '법제처 · 만 나이 관련 법령 안내', href: 'https://www.moleg.go.kr/' }],
+    },
+  },
+  {
+    slug: 'korean-age', category: 'life', route: '/life/korean-age/', title: '세는나이 계산기',
+    description: '출생연도와 기준연도로 관습적인 한국식 세는나이를 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['international-age', 'zodiac'],
+    guide: {
+      formula: '세는나이 = 기준연도 - 출생연도 + 1',
+      examples: [{ title: '2000년생', text: '2000년 9월 18일생은 2026년 9월 17일 기준 세는나이 27세입니다.' }, { title: '출생한 해', text: '2026년 1월 1일생은 같은 해 12월 31일에도 세는나이 1세입니다.' }],
+      limitations: ['법적 만 나이나 연 나이가 아닌 관습적 세는나이입니다.', '자격·보험·행정 절차에 이 결과를 그대로 적용하지 마세요. 출생일 이후의 기준일을 입력해야 합니다.'], sources: [{ label: '법제처 · 나이 기준 안내', href: 'https://www.moleg.go.kr/' }],
+    },
+  },
+  {
+    slug: 'zodiac', category: 'life', route: '/life/zodiac/', title: '출생연도 띠 계산기',
+    description: '양력 출생연도를 12년 주기로 대응시켜 동물 띠를 표시합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['korean-age', 'international-age'],
+    guide: {
+      formula: '(출생연도 - 4)를 12로 나눈 나머지 순서: 쥐·소·호랑이·토끼·용·뱀·말·양·원숭이·닭·개·돼지',
+      examples: [{ title: '2024년생', text: '양력 2024년을 입력하면 용띠입니다. 1월생도 양력 연도 기준을 사용합니다.' }, { title: '2026년생', text: '양력 2026년을 입력하면 말띠입니다. 12년 뒤 2038년도 말띠입니다.' }],
+      limitations: ['양력 1월 1일을 연도 경계로 사용하며 음력 설이나 입춘 기준의 전통 해석과 다를 수 있습니다.', '운세·사주·길흉 해석이나 음양력 변환은 제공하지 않습니다.'], sources: [{ label: '한국천문연구원 생활천문관 · 달력 참고', href: 'https://astro.kasi.re.kr/' }],
+    },
+  },
+  {
+    slug: 'percentage', category: 'life', route: '/life/percentage/', title: '백분율 계산기',
+    description: '부분 값이 전체 값의 몇 퍼센트인지 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['discount-rate', 'margin'],
+    guide: {
+      formula: '백분율 = 부분 값 ÷ 전체 값 × 100',
+      examples: [{ title: '30은 120의 몇 퍼센트', text: '30 ÷ 120 × 100 = 25%입니다.' }, { title: '음수 부분 값', text: '-20 ÷ 100 × 100 = -20%입니다. 전체가 0이면 비율은 정의되지 않아 편의상 0%로 표시합니다.' }],
+      limitations: ['증감률·퍼센트포인트 계산과 구분하세요. 이 계산기는 부분/전체 비율만 구합니다.', '전체가 0일 때의 0%는 수학적 비율이 아닌 표시 규칙입니다.'], sources: [{ label: 'OpenStax · 백분율 산술', href: 'https://openstax.org/books/prealgebra-2e/pages/6-introduction' }],
+    },
+  },
+  {
+    slug: 'household-split', category: 'life', route: '/life/household-split/', title: '생활비 더치페이 계산기',
+    description: '원 단위 총액을 인원수로 나누고 남는 금액을 따로 표시합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['tip-split', 'monthly-budget'],
+    guide: {
+      formula: '기본 부담액 = 총액 ÷ 인원의 정수 몫; 남는 금액 = 총액 - 기본 부담액 × 인원',
+      examples: [{ title: '1만원을 3명이 분담', text: '1인당 3,333원이고 1원이 남습니다. 한 사람이 1원을 추가하면 합계가 맞습니다.' }, { title: '12만원을 4명이 분담', text: '1인당 3만원이며 남는 금액은 0원입니다.' }],
+      limitations: ['인원은 양의 정수로 입력하며 차등 부담·선결제 정산은 지원하지 않습니다.', '남는 금액을 누가 부담할지는 정하지 않습니다. 실제 합계에 맞추어 별도로 나누세요.'], sources: [{ label: 'OpenStax · 나눗셈과 나머지', href: 'https://openstax.org/books/prealgebra-2e/pages/1-introduction' }],
+    },
+  },
+  {
+    slug: 'electricity-estimate', category: 'life', route: '/life/electricity-estimate/', title: '전기요금 수동 추정 계산기',
+    description: '전력 사용량, 직접 확인한 단가, 기본·기타 요금으로 단순 예상액을 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['monthly-budget', 'ev-charging-cost'],
+    guide: {
+      formula: '수동 예상액 = 사용량(kWh) × 직접 입력한 단가(원/kWh) + 기본·기타 요금',
+      examples: [{ title: '200kWh 산술 예시', text: '200kWh, 150원/kWh, 기본·기타 요금 1,000원이면 31,000원입니다. 예시 단가는 실제 요금표가 아닙니다.' }, { title: '다른 단가 비교', text: '100kWh, 200원/kWh, 기본·기타 요금 2,000원이면 22,000원입니다.' }],
+      limitations: ['누진 구간·계절·전압·가구 조건·세금·기금·할인을 자동 적용하지 않습니다. 실제 고지액 계산기가 아닙니다.', '공식 요금표와 청구서를 직접 확인해 가정값을 입력하세요. 외부 요금 조회나 자동 갱신을 하지 않습니다.'], sources: [{ label: '한국전력 한전ON · 전기요금 확인', href: 'https://online.kepco.co.kr/' }],
+    },
+  },
+  {
+    slug: 'phone-plan-cost', category: 'life', route: '/life/phone-plan-cost/', title: '휴대폰 요금제 총비용 계산기',
+    description: '월 통신요금과 개월 수, 기기 총액, 전체 기간 할인 총액을 직접 입력해 비교합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['monthly-budget', 'household-split'],
+    guide: {
+      formula: '전체 비용 = 월 요금 × 개월 + 기기 총액 - 전체 기간 할인 총액',
+      examples: [{ title: '24개월 이용', text: '월 5만원, 24개월, 기기 100만원, 전체 할인 20만원이면 총비용 200만원입니다.' }, { title: '기기 없이 12개월', text: '월 3만원, 12개월, 기기 0원, 전체 할인 6만원이면 30만원입니다. 할인액은 월액이 아닌 기간 전체 금액입니다.' }],
+      limitations: ['통신사 요금표·보조금·할인 자격을 조회하거나 자동 적용하지 않습니다.', '할부 이자·부가서비스·초과요금·위약금은 직접 비용에 반영해야 합니다. 할인액이 비용보다 크면 음수로 표시합니다.'], sources: [{ label: '스마트초이스 · 통신요금 정보', href: 'https://www.smartchoice.or.kr/' }],
+    },
+  },
+  {
+    slug: 'tip-split', category: 'life', route: '/life/tip-split/', title: '팁 포함 더치페이 계산기',
+    description: '결제 금액에 직접 정한 팁 비율을 더하고 인원별 부담액을 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['household-split', 'percentage'],
+    guide: {
+      formula: '팁 = 결제 금액 × 입력 비율 ÷ 100; 1인당 금액 = (결제 금액 + 팁) ÷ 인원',
+      examples: [{ title: '10% 팁, 4명', text: '결제 금액 10만원에 팁 10%이면 합계 11만원, 4명 기준 1인당 27,500원입니다.' }, { title: '팁 없는 3명 분담', text: '1만원, 팁 0%, 3명이면 표시액은 1인당 3,333원입니다. 반올림 차이 1원은 별도로 조정하세요.' }],
+      limitations: ['팁 비율은 사용자의 선택이며 지역별 의무 요율이나 관행을 제안하지 않습니다.', '원화 원 단위 반올림이므로 1인당 표시액의 합계와 전체 금액이 다를 수 있습니다. 환율·현지 세금은 자동 적용하지 않습니다.'], sources: [{ label: 'OpenStax · 백분율 산술', href: 'https://openstax.org/books/prealgebra-2e/pages/6-introduction' }],
+    },
+  },
+  {
+    slug: 'gpa', category: 'education', route: '/education/gpa/', title: '평균 학점 계산기',
+    description: '과목별 이수 학점과 숫자 평점을 입력해 학점 가중 평균을 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['grade-conversion', 'study-plan'],
+    guide: {
+      formula: '평균 평점 = 각 과목의 (학점 × 평점) 합계 ÷ 전체 학점',
+      examples: [{ title: '학점 가중 평균', text: '3학점에 평점 4, 1학점에 평점 2이면 (3×4+1×2)÷4 = 3.50입니다. 입력 형식은 3:4, 1:2입니다.' }, { title: '같은 학점 두 과목', text: '각 2학점 과목의 평점이 4.5와 3.5이면 평균은 4.00입니다.' }],
+      limitations: ['성적 문자 환산·재수강·P/F·소수점 처리 규칙은 학교마다 다릅니다. 포함 대상과 숫자 평점을 직접 확인하세요.', '전체 학점이 0이면 편의상 0을 표시합니다. 학교의 공식 성적표를 대체하지 않습니다.'], sources: [{ label: '서울대학교 · 수업·성적 처리 안내', href: 'https://www.snu.ac.kr/academics/resources/course_taking' }],
+    },
+  },
+  {
+    slug: 'grade-conversion', category: 'education', route: '/education/grade-conversion/', title: '학점 비례 환산 계산기',
+    description: '현재 평점과 두 만점을 직접 입력해 단순 비례 방식으로 환산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['gpa', 'percentage'],
+    guide: {
+      formula: '환산 평점 = 현재 평점 ÷ 현재 만점 × 변환할 만점',
+      examples: [{ title: '4.5 만점에서 4.0 만점', text: '3.6 ÷ 4.5 × 4 = 3.20입니다. 공식 기관 환산표와 같다고 보장하지 않습니다.' }, { title: '백분율 가정', text: '4.0 만점의 평점 3.0을 100 만점으로 단순 비례 환산하면 75.00입니다.' }],
+      limitations: ['대학·기업·기관의 공식 환산표가 아닌 단순 비례값입니다. 제출용 성적 변환은 해당 기관 기준을 확인하세요.', '현재 평점은 0 이상 현재 만점 이하, 두 만점은 0보다 커야 합니다.'], sources: [{ label: '서울대학교 · 기관별 성적 처리 기준 참고', href: 'https://www.snu.ac.kr/academics/resources/course_taking' }],
+    },
+  },
+  {
+    slug: 'study-plan', category: 'education', route: '/education/study-plan/', title: '학습 시간 계획 계산기',
+    description: '전체 학습 분량을 시간으로 정하고 공부할 일수에 균등 배분합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['dday', 'gpa'],
+    guide: {
+      formula: '하루 평균 학습 시간(분) = 전체 학습 시간(분) ÷ 학습 일수',
+      examples: [{ title: '7일 계획', text: '1,000분을 7일에 나누면 하루 평균 142.86분입니다.' }, { title: '10일 계획', text: '600분을 10일에 나누면 하루 60분입니다. 휴일은 학습 일수에서 직접 제외하세요.' }],
+      limitations: ['과목 난도·휴식·복습 주기·집중력 차이를 자동 고려하지 않습니다.', '매일 같은 분량의 단순 계획이며 성적 향상이나 학습 성과를 보장하지 않습니다.'], sources: [{ label: 'BIPM · 시간 단위 정의', href: 'https://www.bipm.org/en/publications/si-brochure' }],
+    },
+  },
+  {
+    slug: 'lottery-numbers', category: 'education', route: '/education/lottery-numbers/', title: '로또·무작위 번호 생성기',
+    description: '범위와 개수를 정해 중복 없는 번호를 브라우저에서 무작위로 뽑습니다.', lastReviewed: '2026-09-17', relatedSlugs: ['random-picker', 'percentage'],
+    guide: {
+      formula: '1부터 최대 번호까지 균등한 비복원 추첨 후 오름차순 정렬',
+      examples: [{ title: '6개 중복 없는 번호', text: '최대 번호 45, 개수 6이면 1~45 사이의 서로 다른 숫자 6개를 뽑습니다. 실제 번호는 계산할 때마다 달라질 수 있습니다.' }, { title: '작은 범위 확인', text: '최대 번호 3, 개수 3이면 모든 번호를 선택하므로 정렬 결과는 항상 1, 2, 3입니다.' }],
+      limitations: ['오락용 무작위 도구이며 당첨 예측·확률 향상·수익을 보장하지 않습니다. 복권 구매 기능은 없습니다.', '최대 번호는 10,000, 개수는 100 이하이며 개수는 최대 번호를 넘을 수 없습니다. 브라우저의 보안 난수 기능이 없으면 생성하지 않습니다.'], sources: [{ label: 'W3C · Web Cryptography API', href: 'https://www.w3.org/TR/WebCryptoAPI/' }],
+    },
+  },
+  {
+    slug: 'random-picker', category: 'education', route: '/education/random-picker/', title: '무작위 뽑기',
+    description: '직접 적은 후보 중 원하는 개수를 중복 없이 골라 브라우저 안에서 표시합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['lottery-numbers', 'household-split'],
+    guide: {
+      formula: '후보를 균등한 비복원 방식으로 무작위 선택; 동일 후보의 중복 입력은 거부',
+      examples: [{ title: '메뉴 1개 고르기', text: '김밥, 국수, 덮밥을 입력하고 1개를 선택하면 세 후보 중 하나가 표시됩니다. 어떤 메뉴가 나올지는 미리 정하지 않습니다.' }, { title: '후보 전부 뽑기', text: '사과, 배를 입력하고 2개를 선택하면 두 항목이 모두 나오며 순서는 달라질 수 있습니다.' }],
+      limitations: ['쉼표로 후보를 구분하므로 항목 자체에는 쉼표를 넣을 수 없습니다. 최대 100개, 항목당 100자입니다.', '클릭할 때만 브라우저의 보안 난수를 사용하며 후보와 결과를 저장·전송하지 않습니다. 공식 추첨의 감사·인증 기능은 제공하지 않습니다.'], sources: [{ label: 'W3C · Web Cryptography API', href: 'https://www.w3.org/TR/WebCryptoAPI/' }],
+    },
+  },
+  {
+    slug: 'unit-conversion', category: 'education', route: '/education/unit-conversion/', title: '길이·무게·온도 단위 변환기',
+    description: '길이, 질량, 온도 값을 같은 종류의 다른 단위로 환산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['fuel-efficiency-conversion', 'running-pace'],
+    guide: {
+      formula: '길이·질량: 값 × 원단위 기준배율 ÷ 결과단위 기준배율; 화씨 = 섭씨 × 9/5 + 32; 켈빈 = 섭씨 + 273.15',
+      examples: [{ title: '킬로미터에서 미터', text: '1.25km를 m로 바꾸면 1,250.00m입니다. 1in는 정확히 0.0254m입니다.' }, { title: '섭씨에서 화씨', text: '100°C는 212.00°F이며 -40°C는 -40.00°F입니다.' }],
+      limitations: ['같은 종류의 단위만 변환합니다. 질량 kg와 길이 m처럼 서로 다른 종류는 거부합니다.', '절대영도보다 낮은 온도는 거부하며 결과는 소수점 둘째 자리까지 표시하므로 작은 값은 0.00으로 보일 수 있습니다.'], sources: [{ label: 'NIST · SI 및 단위 환산', href: 'https://www.nist.gov/pml/special-publication-811' }],
+    },
+  },
+  {
+    slug: 'fuel-efficiency-conversion', category: 'education', route: '/education/fuel-efficiency-conversion/', title: '연비 단위 변환기',
+    description: 'km/L, L/100km, 미국식 mpg 사이의 연비를 변환합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['fuel-cost', 'unit-conversion'],
+    guide: {
+      formula: 'L/100km = 100 ÷ km/L; km/L = 미국식 mpg × 1.609344 ÷ 3.785411784',
+      examples: [{ title: '20km/L 변환', text: '20km/L는 5.00L/100km입니다.' }, { title: '10L/100km 변환', text: '10L/100km는 10.00km/L이며 미국식 mpg로는 약 23.52입니다.' }],
+      limitations: ['mpg는 US gallon만 사용하며 영국식 imperial gallon과 다릅니다.', '실제 주행 효율을 예측하지 않습니다. 0 또는 음수 연비는 역수 변환이 불가능하거나 의미가 없어 거부합니다.'], sources: [{ label: 'NIST · 마일·미국 갤런 환산 정의', href: 'https://www.nist.gov/pml/special-publication-811' }],
+    },
+  },
+  {
+    slug: 'time-zone-comparison', category: 'education', route: '/education/time-zone-comparison/', title: '수동 시차 비교 계산기',
+    description: '현지 시각과 두 지역의 UTC 오프셋을 직접 입력해 상대 지역 시각과 날짜 차이를 구합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['date-offset', 'dday'],
+    guide: {
+      formula: '도착지 분 = 출발지 시각(분) - 출발지 UTC 오프셋 + 도착지 UTC 오프셋; 1,440분 단위로 날짜 이월',
+      examples: [{ title: '다음 날로 넘어가기', text: '출발지 23:00, UTC 오프셋 0분, 도착지 +120분이면 다음 날 01:00입니다.' }, { title: '이전 날로 넘어가기', text: '출발지 01:00, 출발지 +540분, 도착지 -300분이면 이전 날 11:00입니다. 오프셋은 해당 날짜의 값을 확인하세요.' }],
+      limitations: ['도시 시간대 데이터베이스나 서머타임을 자동 조회하지 않습니다. 실제 해당 날짜의 UTC 오프셋을 분으로 직접 입력하세요.', '입력은 24시간 시각이며 정확한 달력 날짜 대신 상대 일수만 표시합니다. 분 미만·윤초는 반영하지 않습니다.'], sources: [{ label: 'IANA · 시간대 데이터와 변경 이력 참고', href: 'https://www.iana.org/time-zones' }],
+    },
+  },
 ] as const satisfies ReadonlyArray<CalculatorCatalogEntry>;

@@ -1,6 +1,111 @@
 import { expect, it } from 'vitest';
 import { getCalculatorByCategoryAndSlug, getCalculatorBySlug } from '@/lib/calculators/registry';
 
+it('keeps fractional defaults accurate in the grade conversion field examples', () => {
+  const fields = getCalculatorBySlug('grade-conversion')!.fields;
+  expect(fields.find(({ name }) => name === 'gradePoint')?.hint).toBe('예: 3.6');
+  expect(fields.find(({ name }) => name === 'fromScale')?.hint).toBe('예: 4.5');
+});
+
+it.each([
+  ['gpa', { courses: '3:4, 1:2' }, '3.50'],
+  ['grade-conversion', { gradePoint: '3.6', fromScale: '4.5', toScale: '4' }, '3.20'],
+  ['study-plan', { totalMinutes: '1000', days: '7' }, '142.86 분/일'],
+  ['unit-conversion', { value: '1.25', from: 'km', to: 'm' }, '1,250.00 m'],
+  ['unit-conversion', { value: '-40', from: 'celsius', to: 'fahrenheit' }, '-40.00 °F'],
+  ['fuel-efficiency-conversion', { value: '20', from: 'kmPerLitre', to: 'litresPer100Km' }, '5.00 L/100km'],
+  ['time-zone-comparison', { localTime: '23:00', fromOffsetMinutes: '0', toOffsetMinutes: '120' }, '01:00 (다음 날)'],
+  ['time-zone-comparison', { localTime: '01:00', fromOffsetMinutes: '540', toOffsetMinutes: '-300' }, '11:00 (이전 날)'],
+] satisfies Array<[string, Record<string, string>, string]>)('calculates education %s with entered units and scales', (slug, raw, expected) => {
+  expect(getCalculatorBySlug(slug)?.evaluate(raw).summary.value).toBe(expected);
+});
+
+it.each([
+  ['gpa', { courses: '3:4:1' }],
+  ['grade-conversion', { gradePoint: '5', fromScale: '4.5', toScale: '4' }],
+  ['study-plan', { totalMinutes: '1000', days: '0' }],
+  ['unit-conversion', { value: '1', from: 'kg', to: 'm' }],
+  ['unit-conversion', { value: '-274', from: 'celsius', to: 'kelvin' }],
+  ['fuel-efficiency-conversion', { value: '0', from: 'kmPerLitre', to: 'litresPer100Km' }],
+  ['time-zone-comparison', { localTime: '24:00', fromOffsetMinutes: '0', toOffsetMinutes: '120' }],
+  ['random-picker', { choices: '사과, 사과', count: '1' }],
+  ['random-picker', { choices: '사과, 배', count: '3' }],
+  ['lottery-numbers', { count: '6', maximum: '5' }],
+] satisfies Array<[string, Record<string, string>]>)('rejects invalid education inputs for %s', (slug, raw) => {
+  expect(getCalculatorBySlug(slug)).toBeDefined();
+  expect(() => getCalculatorBySlug(slug)!.evaluate(raw)).toThrow();
+});
+
+it.each([
+  ['dday', { referenceDate: '2026-09-17', targetDate: '2026-09-20' }, 'D-3'],
+  ['dday', { referenceDate: '2026-09-17', targetDate: '2026-09-15' }, 'D+2'],
+  ['dday', { referenceDate: '2026-09-17', targetDate: '2026-09-17' }, 'D-Day'],
+  ['date-between', { start: '2024-02-28', end: '2024-03-01' }, '2일'],
+  ['date-offset', { date: '2024-03-01', days: '-1' }, '2024-02-29'],
+  ['weekday', { date: '2026-09-17' }, '목요일'],
+  ['international-age', { birthDate: '2000-09-18', referenceDate: '2026-09-17' }, '25세'],
+  ['korean-age', { birthDate: '2000-09-18', referenceDate: '2026-09-17' }, '27세'],
+  ['zodiac', { birthDate: '2024-01-01' }, '용띠'],
+  ['percentage', { part: '30', whole: '120' }, '25%'],
+  ['household-split', { totalWon: '10000', people: '3' }, '₩3,333'],
+  ['electricity-estimate', { kwh: '200', wonPerKwh: '150', baseWon: '1000' }, '₩31,000'],
+  ['phone-plan-cost', { monthlyWon: '50000', months: '24', deviceWon: '1000000', discountWon: '200000' }, '₩2,000,000'],
+  ['tip-split', { billWon: '100000', tipPercent: '10', people: '4' }, '₩27,500'],
+] satisfies Array<[string, Record<string, string>, string]>)('calculates life %s from explicit dates and amounts', (slug, raw, expected) => {
+  expect(getCalculatorBySlug(slug)?.evaluate(raw).summary.value).toBe(expected);
+});
+
+it.each([
+  ['date-offset', { date: '2024-02-29', days: '1.5' }],
+  ['date-between', { start: '2026-02-30', end: '2026-03-01' }],
+  ['international-age', { birthDate: '2026-09-18', referenceDate: '2026-09-17' }],
+  ['household-split', { totalWon: '10000', people: '0' }],
+  ['phone-plan-cost', { monthlyWon: '1', months: '1.5', deviceWon: '0', discountWon: '0' }],
+] satisfies Array<[string, Record<string, string>]>)('rejects invalid life values for %s', (slug, raw) => {
+  expect(getCalculatorBySlug(slug)).toBeDefined();
+  expect(() => getCalculatorBySlug(slug)!.evaluate(raw)).toThrow();
+});
+
+it('preserves indivisible won and zero-denominator limitations', () => {
+  expect(getCalculatorBySlug('household-split')?.evaluate({ totalWon: '10000', people: '3' }).rows).toContainEqual({ label: '남는 금액', value: '₩1' });
+  expect(getCalculatorBySlug('percentage')?.evaluate({ part: '1', whole: '0' }).rows?.some(({ value }) => value.includes('0%'))).toBe(true);
+});
+
+it.each([
+  ['bmi', { weightKg: '70', heightCm: '175' }, '22.86'],
+  ['bmr', { weightKg: '70', heightCm: '175', age: '30', sex: 'male' }, '1,648.75 kcal/일'],
+  ['daily-calories', { bmr: '1600', activityMultiplier: '1.5', goalAdjustmentKcal: '-300' }, '2,100.00 kcal/일'],
+  ['macro-nutrients', { caloriesKcal: '2000', proteinPercent: '30', carbPercent: '50', fatPercent: '20' }, '150.00 g'],
+  ['target-weight', { heightCm: '175', targetBmi: '22' }, '67.38 kg'],
+  ['running-pace', { distanceKm: '5', seconds: '1500' }, '300.00 초/km'],
+  ['walking-calories', { distanceKm: '5', kcalPerKm: '50' }, '250.00 kcal'],
+  ['water-intake', { weightKg: '70', mlPerKg: '30' }, '2.10 L'],
+] satisfies Array<[string, Record<string, string>, string]>)('calculates health %s without diagnosis', (slug, raw, expected) => {
+  const definition = getCalculatorBySlug(slug);
+  expect(definition?.evaluate(raw).summary.value).toBe(expected);
+  expect(definition?.guide.limitations.join(' ')).toMatch(/의료 조언/);
+});
+
+it.each([
+  ['macro-nutrients', { caloriesKcal: '2000', proteinPercent: '30', carbPercent: '50', fatPercent: '50' }],
+  ['bmr', { weightKg: '70', heightCm: '175', age: '30.5', sex: 'male' }],
+  ['bmi', { weightKg: '70', heightCm: '0' }],
+  ['daily-calories', { bmr: '100', activityMultiplier: '1', goalAdjustmentKcal: '-200' }],
+] satisfies Array<[string, Record<string, string>]>)('rejects invalid health assumptions for %s', (slug, raw) => {
+  expect(getCalculatorBySlug(slug)).toBeDefined();
+  expect(() => getCalculatorBySlug(slug)!.evaluate(raw)).toThrow();
+});
+
+it.each([
+  ['lease-vs-purchase', { purchaseMonthlyWon: '500000', leaseMonthlyWon: '400000', months: '24', purchaseResidualWon: '3000000', leaseInitialWon: '1000000' }, '₩-1,600,000'],
+  ['rental-vs-lease', { rentalMonthlyWon: '500000', leaseMonthlyWon: '400000', months: '24' }, '₩2,400,000'],
+  ['depreciation', { purchaseWon: '30000000', residualWon: '18000000', months: '60' }, '₩200,000'],
+  ['total-ownership-cost', { purchaseCostWon: '30000000', annualRunningWon: '3000000', years: '5', resaleWon: '15000000' }, '₩30,000,000'],
+  ['highway-toll-budget', { oneWayTollWon: '5000', returnTrips: '20' }, '₩200,000'],
+] satisfies Array<[string, Record<string, string>, string]>)('calculates remaining car %s from supplied costs', (slug, raw, expected) => {
+  expect(getCalculatorBySlug(slug)?.evaluate(raw).summary.value).toBe(expected);
+});
+
 it.each([
   ['acquisition-tax', { purchaseWon: '100000000', ratePercent: '2' }, '₩2,000,000'],
   ['brokerage-fee', { transactionWon: '100000000', ratePercent: '1', capWon: '300000' }, '₩300,000'],

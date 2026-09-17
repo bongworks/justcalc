@@ -9,12 +9,17 @@ import { calculateFuelCost } from '@/lib/car/fuel';
 import { calculateEvChargingCost } from '@/lib/car/ev';
 import { calculateMaintenanceCost, type MaintenanceInput } from '@/lib/car/maintenance';
 import { calculatePurchaseCost } from '@/lib/car/purchase';
+import { calculateLeasePurchaseComparison, calculateRentalLeaseComparison, calculateDepreciation, calculateTotalOwnership, calculateHighwayTollBudget } from '@/lib/car/comparison';
+import { calculateBmi, calculateBmr, calculateDailyCalories, calculateMacroNutrients, calculateTargetWeight, calculateRunningPace, calculateWalkingCalories, calculateWaterIntake } from '@/lib/health/body';
 import { calculateRepaymentPlans, calculateSimpleInterest, type RepaymentRow, type SimpleInterestInput } from '@/lib/finance/loan';
 import { calculateCompoundSavings, type CompoundSavingsRow } from '@/lib/finance/compound';
 import { calculateSavingsMaturity, calculateDepositInterest, type SavingsInterestResult } from '@/lib/finance/savings';
 import { calculateLoanAffordability } from '@/lib/finance/affordability';
 import { calculateDsr, calculateDti, calculateLtv, convertCurrency } from '@/lib/finance/ratios';
 import { calculateMonthlyBudget } from '@/lib/life/budget';
+import { calculateDday, calculateDaysBetween, calculateDateOffset, calculateWeekday, calculateInternationalAge, calculateKoreanAge, calculateZodiac } from '@/lib/life/date';
+import { calculatePercentage, calculateSplitExpense, calculateElectricityEstimate, calculatePhonePlanCost, calculateTipSplit } from '@/lib/life/everyday';
+import { calculateGpa, calculateGradeConversion, calculateStudyPlan, convertUnit, convertFuelEfficiency, compareTimeZones, generateLotteryNumbers, pickRandom, type ConvertibleUnit, type FuelEfficiencyUnit } from '@/lib/education/study';
 import { calculateHourlyMonthlyPay, calculateTakeHomePay, calculateWeeklyHolidayPay } from '@/lib/salary/pay';
 import { calculateAnnualLeaveAllowance, calculateParentalLeaveEstimate, calculateSeverancePay, calculateUnemploymentBenefitEstimate } from '@/lib/salary/benefits';
 import { calculateFreelancerWithholding, calculateSalaryNegotiation } from '@/lib/salary/planning';
@@ -44,6 +49,10 @@ const money = bounded(parseMoney);
 const nonnegative = bounded(parseNonNegativeDecimal);
 const positive = bounded(parsePositiveDecimal);
 const rate = bounded(parseNonNegativeDecimal, new Decimal(100));
+const signed = (raw: string): Decimal => {
+  const normalized = raw.trim();
+  return normalized.startsWith('-') ? nonnegative(normalized.slice(1)).negated() : nonnegative(normalized);
+};
 const months = (raw: string) => {
   const value = bounded(parsePositiveDecimal, new Decimal(1200))(raw);
   if (!value.isInteger()) throw new Error('기간은 정수 개월로 입력해 주세요.');
@@ -55,7 +64,7 @@ function wholeCount(raw: string, minimum: number, maximum = 1200) {
   return value.toNumber();
 }
 function number(name: string, label: string, unit: string, example: string, parser: (raw: string) => unknown = money, hint = '원 단위 정수로 입력'): CalculatorField {
-  const formattedExample = example ? formatNumber(example, 0) : '';
+  const formattedExample = example ? formatNumber(example, new Decimal(example).decimalPlaces()) : '';
   return { name, label, unit, required: true, defaultValue: example, hint: formattedExample ? `${hint ? `${hint} · ` : ''}예: ${formattedExample}` : hint, validate: (raw) => { try { parser(raw); } catch (error) { return error instanceof Error ? error.message : '입력값을 확인해 주세요.'; } } };
 }
 function select(name: string, label: string, options: ReadonlyArray<{ value: string; label: string }>, defaultValue: string): CalculatorField {
@@ -296,4 +305,143 @@ const discountRate = define('discount-rate', [number('originalWon', '정가', '�
   (raw) => ({ originalWon: money(raw.originalWon), discountedWon: money(raw.discountedWon) }), calculateDiscountRate,
   (result) => ({ summary: { label: '정가 대비 할인율', value: formattedPercentValue(result.percent) }, rows: [won('할인 금액', result.discountWon)] }));
 
-export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer, savingsMaturity, depositInterest, affordability, dsr, dti, ltv, cardInstalment, manualExchange, acquisitionTax, brokerageFee, depositConversion, rentComparison, movingBudget, setupBudget, housingAffordability, rentalYield, holdingCosts, vat, margin, markup, breakEven, salesCommission, onlineSettlement, freelancerNet, monthlyProfitLoss, businessFeasibility, discountRate];
+const leasePurchase = define('lease-vs-purchase', [number('purchaseMonthlyWon', '구매 월 환산 비용', '원', '500000', money, '구매 초기비와 포함할 비용을 월 환산한 값'), number('leaseMonthlyWon', '리스 월 비용', '원', '400000'), { ...repaymentMonths, label: '비교 기간' }, number('purchaseResidualWon', '구매 차량 잔존가치', '원', '3000000'), number('leaseInitialWon', '리스 초기 비용', '원', '1000000')],
+  (raw) => ({ purchaseMonthlyWon: money(raw.purchaseMonthlyWon), leaseMonthlyWon: money(raw.leaseMonthlyWon), months: months(raw.months), purchaseResidualWon: money(raw.purchaseResidualWon), leaseInitialWon: money(raw.leaseInitialWon) }), calculateLeasePurchaseComparison,
+  (result) => ({ summary: won('구매 - 리스 비용 차이', result.differenceWon), rows: [won('구매 순비용', result.purchaseTotalWon), won('리스 총비용', result.leaseTotalWon)] }));
+const rentalLease = define('rental-vs-lease', [number('rentalMonthlyWon', '렌트 월 비용', '원', '500000'), number('leaseMonthlyWon', '리스 월 비용', '원', '400000'), { ...repaymentMonths, label: '비교 기간' }],
+  (raw) => ({ rentalMonthlyWon: money(raw.rentalMonthlyWon), leaseMonthlyWon: money(raw.leaseMonthlyWon), months: months(raw.months) }), calculateRentalLeaseComparison,
+  (result) => ({ summary: won('렌트 - 리스 비용 차이', result.differenceWon), rows: [won('렌트 총비용', result.rentalTotalWon), won('리스 총비용', result.leaseTotalWon)] }));
+const depreciation = define('depreciation', [number('purchaseWon', '구매가', '원', '30000000'), number('residualWon', '예상 잔존가치', '원', '18000000'), { ...repaymentMonths, label: '보유 기간', defaultValue: '60' }],
+  (raw) => ({ purchaseWon: money(raw.purchaseWon), residualWon: money(raw.residualWon), months: months(raw.months) }), calculateDepreciation,
+  (result) => ({ summary: won('월 감가액', result.monthlyLossWon), rows: [won('총 가치 감소액', result.totalLossWon)] }));
+const ownership = define('total-ownership-cost', [number('purchaseCostWon', '구매 총비용', '원', '30000000'), number('annualRunningWon', '연간 운용비', '원', '3000000'), number('years', '보유 연수', '년', '5', (raw) => wholeCount(raw, 1, 100), '1~100년, 정수'), number('resaleWon', '예상 매각액', '원', '15000000')],
+  (raw) => ({ purchaseCostWon: money(raw.purchaseCostWon), annualRunningWon: money(raw.annualRunningWon), years: wholeCount(raw.years, 1, 100), resaleWon: money(raw.resaleWon) }), calculateTotalOwnership,
+  (result) => ({ summary: won('총보유비용', result.totalWon) }));
+const toll = define('highway-toll-budget', [number('oneWayTollWon', '확인한 편도 통행료', '원', '5000'), number('returnTrips', '왕복 횟수', '회', '20', (raw) => wholeCount(raw, 0, 10000), '0~10,000회, 정수')],
+  (raw) => ({ oneWayTollWon: money(raw.oneWayTollWon), returnTrips: wholeCount(raw.returnTrips, 0, 10000) }), calculateHighwayTollBudget,
+  (result) => ({ summary: won('통행료 예산', result.totalWon) }));
+
+const quantity = (label: string, value: Decimal.Value, unit = ''): ResultValue => ({ label, value: `${formatNumber(value)}${unit ? ` ${unit}` : ''}` });
+const healthNote = { label: '건강 정보 안내', value: '일반적인 산식의 참고값이며 의료 조언·진단·치료 지침이 아닙니다.' };
+const bodyFields = [number('weightKg', '체중', 'kg', '70', positive, '0보다 큰 값'), number('heightCm', '키', 'cm', '175', positive, '0보다 큰 값')];
+const bmi = define('bmi', bodyFields, (raw) => ({ weightKg: positive(raw.weightKg), heightCm: positive(raw.heightCm) }), calculateBmi,
+  (result) => ({ summary: quantity('BMI', result.value), rows: [healthNote] }));
+const bmr = define('bmr', [...bodyFields, number('age', '만 나이', '세', '30', (raw) => wholeCount(raw, 18, 120), '성인 18~120세, 정수'), select('sex', '공식의 성별 계수', [{ value: 'male', label: '남성 계수 (+5)' }, { value: 'female', label: '여성 계수 (-161)' }], 'male')],
+  (raw) => ({ weightKg: positive(raw.weightKg), heightCm: positive(raw.heightCm), age: wholeCount(raw.age, 18, 120), sex: choice(raw.sex, ['male', 'female']) }), calculateBmr,
+  (result) => { if (result.value.lte(0)) throw new Error('입력 조건의 대사량을 확인해 주세요.'); return { summary: quantity('기초대사량 추정', result.value, 'kcal/일'), rows: [healthNote] }; });
+const dailyCalories = define('daily-calories', [number('bmr', '기초대사량', 'kcal/일', '1600', positive, ''), number('activityMultiplier', '직접 정한 활동 배수', '배', '', positive, '수동 설정 · 개인별로 확인'), number('goalAdjustmentKcal', '목표 조정 열량', 'kcal', '0', signed, '감소는 음수, 증가는 양수')],
+  (raw) => ({ bmr: positive(raw.bmr), activityMultiplier: positive(raw.activityMultiplier), goalAdjustmentKcal: signed(raw.goalAdjustmentKcal) }), calculateDailyCalories,
+  (result) => { if (result.targetKcal.lte(0)) throw new Error('결과 열량은 0보다 커야 합니다.'); return { summary: quantity('입력 조건의 하루 열량', result.targetKcal, 'kcal/일'), rows: [healthNote] }; });
+const macros = define('macro-nutrients', [number('caloriesKcal', '하루 열량', 'kcal', '2000', positive, ''), number('proteinPercent', '단백질 비율', '%', '30', rate, '세 비율 합계 100%'), number('carbPercent', '탄수화물 비율', '%', '50', rate, '개인별 비율을 직접 결정'), number('fatPercent', '지방 비율', '%', '20', rate, '개인별 비율을 직접 결정')],
+  (raw) => { const input = { caloriesKcal: positive(raw.caloriesKcal), proteinPercent: rate(raw.proteinPercent), carbPercent: rate(raw.carbPercent), fatPercent: rate(raw.fatPercent) }; if (!input.proteinPercent.add(input.carbPercent).add(input.fatPercent).eq(100)) throw new Error('세 비율의 합계는 100%여야 합니다.'); return input; }, calculateMacroNutrients,
+  (result) => ({ summary: quantity('단백질', result.proteinGrams, 'g'), rows: [quantity('탄수화물', result.carbGrams, 'g'), quantity('지방', result.fatGrams, 'g'), healthNote] }));
+const targetWeight = define('target-weight', [bodyFields[1], number('targetBmi', '직접 정한 목표 BMI', '', '', positive, '목표의 적절성은 전문가와 확인')],
+  (raw) => ({ heightCm: positive(raw.heightCm), targetBmi: positive(raw.targetBmi) }), calculateTargetWeight,
+  (result) => ({ summary: quantity('입력 BMI에 해당하는 체중', result.targetWeightKg, 'kg'), rows: [healthNote] }));
+const runningPace = define('running-pace', [number('distanceKm', '달린 거리', 'km', '5', positive, ''), number('seconds', '걸린 시간', '초', '1500', positive, '예: 25분 = 1,500초')],
+  (raw) => ({ distanceKm: positive(raw.distanceKm), seconds: positive(raw.seconds) }), calculateRunningPace,
+  (result) => ({ summary: quantity('1km 평균 페이스', result.secondsPerKm, '초/km'), rows: [healthNote] }));
+const walkingCalories = define('walking-calories', [number('distanceKm', '걸은 거리', 'km', '5', positive, ''), number('kcalPerKm', '직접 정한 km당 소비 열량', 'kcal/km', '', nonnegative, '기기나 전문가가 제시한 추정치 직접 입력')],
+  (raw) => ({ distanceKm: positive(raw.distanceKm), kcalPerKm: nonnegative(raw.kcalPerKm) }), calculateWalkingCalories,
+  (result) => ({ summary: quantity('걷기 소비 열량 추정', result.caloriesKcal, 'kcal'), rows: [healthNote] }));
+const waterIntake = define('water-intake', [bodyFields[0], number('mlPerKg', '직접 정한 체중당 수분량', 'mL/kg', '', positive, '개인별 조건을 확인해 직접 입력')],
+  (raw) => ({ weightKg: positive(raw.weightKg), mlPerKg: positive(raw.mlPerKg) }), calculateWaterIntake,
+  (result) => ({ summary: quantity('입력 조건의 수분량', result.litres, 'L'), rows: [healthNote] }));
+
+function textField(name: string, label: string, example: string, parser: (raw: string) => unknown, hint: string, type: 'text' | 'date' = 'text'): CalculatorField {
+  return { name, label, type, required: true, defaultValue: example, hint, validate: (raw) => { try { parser(raw); } catch (error) { return error instanceof Error ? error.message : '입력값을 확인해 주세요.'; } } };
+}
+const isoDate = (raw: string): string => { calculateWeekday({ date: raw }); return raw; };
+const dateField = (name: string, label: string, example: string) => textField(name, label, example, isoDate, '연-월-일 · 양력', 'date');
+const signedInteger = (raw: string, maximum = 3650000): number => { const value = signed(raw); if (!value.isInteger() || value.abs().gt(maximum)) throw new Error(`절댓값 ${maximum} 이하 정수를 입력해 주세요.`); return value.toNumber(); };
+const dday = define('dday', [dateField('referenceDate', '기준일', '2026-09-17'), dateField('targetDate', '목표일', '2026-12-25')],
+  (raw) => ({ referenceDate: isoDate(raw.referenceDate), targetDate: isoDate(raw.targetDate) }), calculateDday,
+  (result) => ({ summary: { label: '기준일 대비 디데이', value: result.days === 0 ? 'D-Day' : result.days > 0 ? `D-${result.days}` : `D+${-result.days}` }, rows: [{ label: '일수 기준', value: '기준일 0일 · 미래는 D- · 과거는 D+' }] }));
+const dateBetween = define('date-between', [dateField('start', '시작일', '2026-09-17'), dateField('end', '종료일', '2026-09-20')],
+  (raw) => ({ start: isoDate(raw.start), end: isoDate(raw.end) }), calculateDaysBetween,
+  (result) => ({ summary: { label: '두 날짜 차이', value: `${result.days}일` }, rows: [{ label: '포함 기준', value: '종료일 - 시작일 · 같은 날은 0일 · 시작일 포함 시 별도 조정' }] }));
+const dateOffset = define('date-offset', [dateField('date', '기준 날짜', '2026-09-17'), number('days', '더하거나 뺄 일수', '일', '100', signedInteger, '이전 날짜는 음수, 이후 날짜는 양수')],
+  (raw) => ({ date: isoDate(raw.date), days: signedInteger(raw.days) }), calculateDateOffset,
+  (result) => ({ summary: { label: '계산한 날짜', value: result.date } }));
+const weekday = define('weekday', [dateField('date', '확인할 날짜', '2026-09-17')], (raw) => ({ date: isoDate(raw.date) }), calculateWeekday,
+  (result) => ({ summary: { label: '해당 날짜의 요일', value: result.weekday } }));
+const ageFields = [dateField('birthDate', '출생일', '2000-09-18'), dateField('referenceDate', '기준일', '2026-09-17')];
+const ageInput = (raw: Raw) => ({ birthDate: isoDate(raw.birthDate), referenceDate: isoDate(raw.referenceDate) });
+const internationalAge = define('international-age', ageFields, ageInput, calculateInternationalAge,
+  (result) => ({ summary: { label: '만 나이', value: `${result.age}세` } }));
+const koreanAge = define('korean-age', ageFields, ageInput, calculateKoreanAge,
+  (result) => ({ summary: { label: '세는나이', value: `${result.age}세` }, rows: [{ label: '나이 기준', value: '출생연도 기준 관습적 세는나이 · 법적 만 나이와 다름' }] }));
+const zodiac = define('zodiac', [ageFields[0]], (raw) => ({ birthDate: isoDate(raw.birthDate) }), calculateZodiac,
+  (result) => ({ summary: { label: '양력 출생연도 기준 띠', value: `${result.zodiac}띠` }, rows: [{ label: '연도 경계', value: '양력 1월 1일 기준 · 음력 설·입춘 기준은 미적용' }] }));
+const percentage = define('percentage', [number('part', '부분 값', '', '30', signed, '음수도 입력 가능'), number('whole', '전체 값', '', '120', signed, '음수도 입력 가능')],
+  (raw) => ({ part: signed(raw.part), whole: signed(raw.whole) }), calculatePercentage,
+  (result) => ({ summary: { label: '전체 대비 비율', value: formattedPercentValue(result.percentage) }, rows: [{ label: '전체가 0인 경우', value: '비율을 정의할 수 없어 편의상 0% 표시' }] }));
+const peopleField = number('people', '나눌 인원', '명', '3', (raw) => wholeCount(raw, 1, 10000), '1~10,000명, 정수');
+const householdSplit = define('household-split', [number('totalWon', '나눌 총금액', '원', '10000'), peopleField],
+  (raw) => ({ totalWon: money(raw.totalWon), people: wholeCount(raw.people, 1, 10000) }), calculateSplitExpense,
+  (result) => ({ summary: won('1인당 기본 부담액', result.perPersonWon), rows: [won('남는 금액', result.remainderWon), { label: '정산 안내', value: '남는 금액은 별도로 분담해 총액을 맞추세요.' }] }));
+const electricity = define('electricity-estimate', [number('kwh', '전력 사용량', 'kWh', '200', nonnegative, ''), number('wonPerKwh', '직접 확인한 kWh당 요금', '원/kWh', '', nonnegative, '수동 설정 · 누진요금 자동 적용 없음'), manualMoney('baseWon', '직접 확인한 기본·기타 요금')],
+  (raw) => ({ kwh: nonnegative(raw.kwh), wonPerKwh: nonnegative(raw.wonPerKwh), baseWon: money(raw.baseWon) }), calculateElectricityEstimate,
+  (result) => ({ summary: won('입력 단가 기준 전기요금', result.totalWon), rows: [{ label: '계산 범위', value: '수동 단가의 단순 곱셈 · 실제 누진요금·세금·고지액 산정 아님' }] }));
+const phonePlan = define('phone-plan-cost', [manualMoney('monthlyWon', '직접 확인한 월 통신요금'), number('months', '이용 개월 수', '개월', '24', (raw) => wholeCount(raw, 0), '0~1,200개월, 정수'), manualMoney('deviceWon', '직접 확인한 기기 총액'), manualMoney('discountWon', '전체 기간 할인 총액')],
+  (raw) => ({ monthlyWon: money(raw.monthlyWon), months: wholeCount(raw.months, 0), deviceWon: money(raw.deviceWon), discountWon: money(raw.discountWon) }), calculatePhonePlanCost,
+  (result) => ({ summary: won('기간 전체 통신비', result.totalWon), rows: [{ label: '할인 입력 기준', value: '월 할인액이 아닌 전체 기간 할인 총액 · 위약금·할부이자 별도 반영 필요' }] }));
+const tipSplit = define('tip-split', [number('billWon', '팁 전 결제 금액', '원', '100000'), number('tipPercent', '직접 정한 팁 비율', '%', '10', rate, '0~100% · 의무 요율 아님'), peopleField],
+  (raw) => ({ billWon: money(raw.billWon), tipPercent: rate(raw.tipPercent), people: wholeCount(raw.people, 1, 10000) }), calculateTipSplit,
+  (result) => ({ summary: won('1인당 팁 포함 금액', result.perPersonWon), rows: [won('팁 합계', result.tipWon), won('전체 합계', result.totalWon), { label: '반올림 안내', value: '1인당 표시액의 합과 전체 합계가 다를 수 있어 정산 시 조정하세요.' }] }));
+
+function parseCourses(raw: string) {
+  const entries = raw.split(',');
+  if (!raw.trim() || entries.length > 100) throw new Error('과목을 1~100개 입력해 주세요.');
+  return entries.map((entry) => {
+    const pair = entry.trim().split(':');
+    if (pair.length !== 2) throw new Error('학점:평점 형식으로 입력해 주세요.');
+    return { credits: nonnegative(pair[0]), gradePoint: nonnegative(pair[1]) };
+  });
+}
+const gpa = define('gpa', [textField('courses', '과목별 학점과 평점', '3:4, 1:2', parseCourses, '학점:평점을 쉼표로 구분 · 예: 3:4, 1:2 · P/F 제외 여부는 학교 기준 확인')],
+  (raw) => ({ courses: parseCourses(raw.courses) }), calculateGpa,
+  (result) => ({ summary: quantity('학점 가중 평균 평점', result.gpa), rows: [quantity('합산 학점', result.totalCredits, '학점'), { label: '학교 기준', value: '입력한 숫자 평점만 반영 · 총학점 0은 편의상 평점 0 표시' }] }));
+const gradeConversion = define('grade-conversion', [number('gradePoint', '변환할 평점', '', '3.6', nonnegative, ''), number('fromScale', '현재 만점', '', '4.5', positive, ''), number('toScale', '변환할 만점', '', '4', positive, '')],
+  (raw) => { const input = { gradePoint: nonnegative(raw.gradePoint), fromScale: positive(raw.fromScale), toScale: positive(raw.toScale) }; if (input.gradePoint.gt(input.fromScale)) throw new Error('평점은 현재 만점 이하여야 합니다.'); return input; }, calculateGradeConversion,
+  (result) => ({ summary: quantity('단순 비례 환산 평점', result.gradePoint), rows: [{ label: '환산 기준', value: '학교·기관 공식 환산표와 다른 단순 비례 계산' }] }));
+const studyPlan = define('study-plan', [number('totalMinutes', '전체 학습 시간', '분', '1000', nonnegative, ''), number('days', '학습 일수', '일', '7', (raw) => wholeCount(raw, 1, 10000), '1~10,000일, 정수')],
+  (raw) => ({ totalMinutes: nonnegative(raw.totalMinutes), days: wholeCount(raw.days, 1, 10000) }), calculateStudyPlan,
+  (result) => ({ summary: quantity('하루 평균 학습 시간', result.dailyMinutes, '분/일') }));
+const unitLabels: Record<ConvertibleUnit, string> = { mm: 'mm', cm: 'cm', m: 'm', km: 'km', in: 'in', ft: 'ft', yd: 'yd', mi: 'mi', mg: 'mg', g: 'g', kg: 'kg', oz: 'oz', lb: 'lb', celsius: '°C', fahrenheit: '°F', kelvin: 'K' };
+const unitKeys = Object.keys(unitLabels) as ConvertibleUnit[];
+const unitOptions = unitKeys.map((value) => ({ value, label: unitLabels[value] }));
+const unitConversion = define('unit-conversion', [number('value', '변환할 값', '', '1', signed, '온도는 음수도 가능'), select('from', '원래 단위', unitOptions, 'km'), select('to', '변환 단위', unitOptions, 'm')],
+  (raw) => ({ value: signed(raw.value), from: choice(raw.from, unitKeys), to: choice(raw.to, unitKeys) }),
+  (input) => ({ ...convertUnit(input), unit: input.to }),
+  (result) => ({ summary: quantity('변환 결과', result.value, unitLabels[result.unit]) }));
+const fuelUnitLabels: Record<FuelEfficiencyUnit, string> = { kmPerLitre: 'km/L', litresPer100Km: 'L/100km', milesPerGallonUs: 'mpg (US)' };
+const fuelUnitKeys = Object.keys(fuelUnitLabels) as FuelEfficiencyUnit[];
+const fuelUnitOptions = fuelUnitKeys.map((value) => ({ value, label: fuelUnitLabels[value] }));
+const fuelConversion = define('fuel-efficiency-conversion', [number('value', '변환할 연비', '', '20', positive, '0보다 큰 값'), select('from', '원래 연비 단위', fuelUnitOptions, 'kmPerLitre'), select('to', '변환할 연비 단위', fuelUnitOptions, 'litresPer100Km')],
+  (raw) => ({ value: positive(raw.value), from: choice(raw.from, fuelUnitKeys), to: choice(raw.to, fuelUnitKeys) }),
+  (input) => ({ ...convertFuelEfficiency(input), unit: input.to }),
+  (result) => ({ summary: quantity('환산 연비', result.value, fuelUnitLabels[result.unit]) }));
+function parseLocalTime(raw: string): number {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(raw)) throw new Error('00:00~23:59 형식으로 입력해 주세요.');
+  const [hours, minutes] = raw.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+const offset = (raw: string) => signedInteger(raw, 1440);
+const timeZones = define('time-zone-comparison', [textField('localTime', '출발지 현지 시각', '23:00', parseLocalTime, '24시간 HH:MM 형식'), number('fromOffsetMinutes', '출발지 UTC 오프셋', '분', '0', offset, '직접 확인 · UTC+9는 540, UTC-5는 -300'), number('toOffsetMinutes', '도착지 UTC 오프셋', '분', '120', offset, '직접 확인 · 해당 날짜의 서머타임 반영')],
+  (raw) => ({ localMinutes: parseLocalTime(raw.localTime), fromOffsetMinutes: offset(raw.fromOffsetMinutes), toOffsetMinutes: offset(raw.toOffsetMinutes) }), compareTimeZones,
+  (result) => { const clock = `${String(Math.floor(result.localMinutes / 60)).padStart(2, '0')}:${String(result.localMinutes % 60).padStart(2, '0')}`; const day = result.dayOffset === 0 ? '같은 날' : result.dayOffset === 1 ? '다음 날' : result.dayOffset === -1 ? '이전 날' : `${Math.abs(result.dayOffset)}일 ${result.dayOffset > 0 ? '뒤' : '전'}`; return { summary: { label: '도착지 시각', value: `${clock} (${day})` }, rows: [{ label: '시간대 기준', value: '수동 UTC 오프셋만 적용 · 도시·서머타임 자동 조회 없음' }] }; });
+function parseChoices(raw: string): string[] {
+  const choices = raw.split(',').map((value) => value.trim());
+  if (choices.length > 100 || choices.some((value) => !value || value.length > 100)) throw new Error('1~100개 항목을 쉼표로 구분하고 항목당 100자 이내로 입력해 주세요.');
+  if (new Set(choices).size !== choices.length) throw new Error('중복된 항목을 제거해 주세요.');
+  return choices;
+}
+const randomPicker = define('random-picker', [textField('choices', '후보 목록', '사과, 배, 귤', parseChoices, '쉼표로 구분 · 중복 없이 최대 100개'), number('count', '선택 개수', '개', '1', (raw) => wholeCount(raw, 1, 100), '후보 수 이하, 최대 100개')],
+  (raw) => ({ choices: parseChoices(raw.choices), count: wholeCount(raw.count, 1, 100) }), (input) => pickRandom(input),
+  (result) => ({ summary: { label: '무작위 선택 결과', value: `${result.picks.length}개 선택` }, rows: result.picks.map((value, index) => ({ label: `${index + 1}번째 선택`, value })) }));
+const lottery = define('lottery-numbers', [number('count', '뽑을 번호 개수', '개', '6', (raw) => wholeCount(raw, 1, 100), '최대 번호 이하, 최대 100개'), number('maximum', '최대 번호', '', '45', (raw) => wholeCount(raw, 1, 10000), '1부터 입력한 최대 번호까지 · 최대 10,000')],
+  (raw) => ({ count: wholeCount(raw.count, 1, 100), maximum: wholeCount(raw.maximum, 1, 10000) }), generateLotteryNumbers,
+  (result) => ({ summary: { label: '중복 없는 무작위 번호', value: result.numbers.join(', ') }, rows: [{ label: '추첨 안내', value: '브라우저에서 요청할 때만 추첨 · 당첨 예측·보장 없음' }] }));
+
+export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer, savingsMaturity, depositInterest, affordability, dsr, dti, ltv, cardInstalment, manualExchange, acquisitionTax, brokerageFee, depositConversion, rentComparison, movingBudget, setupBudget, housingAffordability, rentalYield, holdingCosts, vat, margin, markup, breakEven, salesCommission, onlineSettlement, freelancerNet, monthlyProfitLoss, businessFeasibility, discountRate, leasePurchase, rentalLease, depreciation, ownership, toll, bmi, bmr, dailyCalories, macros, targetWeight, runningPace, walkingCalories, waterIntake, dday, dateBetween, dateOffset, weekday, internationalAge, koreanAge, zodiac, percentage, householdSplit, electricity, phonePlan, tipSplit, gpa, gradeConversion, studyPlan, unitConversion, fuelConversion, timeZones, randomPicker, lottery];

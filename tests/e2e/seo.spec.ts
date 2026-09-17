@@ -5,8 +5,8 @@ import { calculatorCategories } from '../../lib/calculators/categories';
 const origin = 'https://calc.bongworks.co.kr';
 const policyRoutes = ['/about/', '/editorial-policy/', '/contact/', '/privacy/', '/terms/'];
 
-test('every calculator has static canonical, social metadata and matching structured data', async ({ page }) => {
-  for (const calculator of calculators) {
+for (const calculator of calculators) {
+  test(`${calculator.slug} has static canonical, social metadata and structured data`, async ({ page }) => {
     await page.goto(`${calculator.route}?income=987654321&income=private`);
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', origin + calculator.route);
@@ -20,8 +20,8 @@ test('every calculator has static canonical, social metadata and matching struct
     expect(json).toContain('BreadcrumbList');
     expect(json).toContain(calculator.title);
     expect(json).not.toMatch(/987654321|income=|private/);
-  }
-});
+  });
+}
 
 test('robots and sitemap include every registered public URL', async ({ request }) => {
   const robots = await request.get('/robots.txt');

@@ -7,6 +7,18 @@ import type { CalculatorCatalogEntry } from '@/lib/calculators/types';
 const categorySlugs = new Set(calculatorCategories.map(({ slug }) => slug));
 
 describe('calculator catalog', () => {
+  it('publishes all 78 planned routes including every remaining category entry', () => {
+    expect(calculatorCatalog).toHaveLength(78);
+    const remaining = {
+      car: ['lease-vs-purchase', 'rental-vs-lease', 'depreciation', 'total-ownership-cost', 'highway-toll-budget'],
+      health: ['bmi', 'bmr', 'daily-calories', 'macro-nutrients', 'target-weight', 'running-pace', 'walking-calories', 'water-intake'],
+      life: ['dday', 'date-between', 'date-offset', 'weekday', 'international-age', 'korean-age', 'zodiac', 'percentage', 'household-split', 'electricity-estimate', 'phone-plan-cost', 'tip-split'],
+      education: ['gpa', 'grade-conversion', 'study-plan', 'lottery-numbers', 'random-picker', 'unit-conversion', 'fuel-efficiency-conversion', 'time-zone-comparison'],
+    } as const;
+    for (const category of Object.keys(remaining) as Array<keyof typeof remaining>) {
+      for (const slug of remaining[category]) expect(calculatorBySlug.get(slug)?.route).toBe(`/${category}/${slug}/`);
+    }
+  });
   it('publishes the exact property and business routes', () => {
     const expected = {
       realestate: ['acquisition-tax', 'brokerage-fee', 'deposit-rent-conversion', 'rent-vs-deposit', 'moving-budget', 'one-person-setup-budget', 'housing-affordability', 'rental-yield', 'holding-cost-checklist'],

@@ -20,6 +20,8 @@ test('홈에서 바로계산기와 자동차 계산기 진입점을 보여준다
 test('home groups every calculator into visible category cards', async ({ page }) => {
   await page.goto('/');
 
+  expect(calculatorCatalog).toHaveLength(78);
+  expect(calculatorCategories).toHaveLength(8);
   await expect(page.locator('.home-calculator-card')).toHaveCount(calculatorCatalog.length);
   await expect(page.locator('.category-card')).toHaveCount(calculatorCategories.length);
 
@@ -35,29 +37,26 @@ test('home groups every calculator into visible category cards', async ({ page }
   }
 });
 
-test('category hub calculator links provide 44px touch targets on mobile', async ({ page, isMobile }) => {
-  test.skip(!isMobile);
-
-  for (const category of calculatorCategories) {
+for (const category of calculatorCategories) {
+  test(`${category.slug} hub contains its registered calculators and mobile touch targets`, async ({ page, isMobile }) => {
     const expectedCount = calculatorCatalog.filter(
       (calculator) => calculator.category === category.slug,
     ).length;
-    if (expectedCount === 0) continue;
-
-    await page.goto(category.route);
+    expect(expectedCount).toBeGreaterThan(0);
+    expect((await page.goto(category.route))?.status()).toBe(200);
     const links = page.getByRole('navigation', {
       name: `${category.label} 계산기 목록`,
     }).getByRole('link');
     await expect(links).toHaveCount(expectedCount);
 
-    for (const link of await links.all()) {
+    for (const link of isMobile ? await links.all() : []) {
       const box = await link.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
-  }
-});
+  });
+}
 
 test('home search filters locally without requests, URL state, or storage', async ({ page }) => {
   await page.goto('/');

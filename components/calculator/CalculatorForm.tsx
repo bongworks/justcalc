@@ -17,7 +17,7 @@ interface BaseField {
 }
 
 export type CalculatorField = BaseField & (
-  | { type?: 'number'; unit?: string; validate?: (raw: string) => string | undefined }
+  | { type?: 'number' | 'date' | 'text'; unit?: string; validate?: (raw: string) => string | undefined }
   | { type: 'select'; options: ReadonlyArray<{ value: string; label: string }> }
 );
 
@@ -37,6 +37,7 @@ function fieldError(field: CalculatorField, raw: string): string | undefined {
   if (field.type === 'select') {
     return field.options.some((option) => option.value === raw) ? undefined : '목록에서 선택해 주세요.';
   }
+  if (field.type === 'text' || field.type === 'date') return field.validate?.(raw);
   try {
     if (!new Decimal(raw.replace(/[\s,]/g, '')).isFinite()) return '유한한 숫자를 입력해 주세요.';
   } catch {
@@ -109,7 +110,7 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
                     <option value="">선택해 주세요</option>
                     {field.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                ) : <input {...attributes} type="text" inputMode="decimal" spellCheck={false} onChange={(event) => change(field.name, event.target.value)} />}
+                ) : <input {...attributes} type={field.type === 'date' ? 'date' : 'text'} inputMode={field.type === 'text' || field.type === 'date' ? undefined : 'decimal'} spellCheck={false} onChange={(event) => change(field.name, event.target.value)} />}
                 {unit && <span className="field-unit" id={`${fieldId}-unit`}>{unit}</span>}
               </div>
               {field.hint && <p className="field-hint" id={`${fieldId}-hint`}>{field.hint}</p>}
