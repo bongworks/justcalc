@@ -28,6 +28,12 @@ it('connects local required errors to the labelled field and focuses it', async 
   expect(onCalculate).not.toHaveBeenCalled();
 });
 
+it('shows concise helper text without changing the labelled field description', () => {
+  render(<CalculatorForm fields={[{ name: 'amount', label: '금액', unit: '원', hint: '원 단위 정수로 입력 · 예: 100,000' }]} onCalculate={() => {}} />);
+  expect(screen.getByText('원 단위 정수로 입력 · 예: 100,000')).toBeVisible();
+  expect(screen.getByRole('textbox', { name: '금액' })).toHaveAccessibleDescription('원 원 단위 정수로 입력 · 예: 100,000');
+});
+
 it('hydrates safely and keeps Enter submission local without navigation or storage', async () => {
   const user = userEvent.setup();
   const onCalculate = vi.fn();
