@@ -19,5 +19,15 @@ test('exposes the eight static calculator categories', () => {
 
 test('returns registered calculators for a category', () => {
   expect(getCategoryCalculators('car').map(({ slug }) => slug)).toContain('fuel-cost');
-  expect(getCategoryCalculators('salary')).toEqual([]);
+  expect(getCategoryCalculators('salary').map(({ slug }) => slug)).toEqual([
+    'take-home-pay',
+    'hourly-monthly-pay',
+    'weekly-holiday-pay',
+    'severance-pay',
+    'annual-leave-allowance',
+    'unemployment-benefit',
+    'parental-leave-benefit',
+    'salary-negotiation',
+    'freelancer-withholding',
+  ]);
 });

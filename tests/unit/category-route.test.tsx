@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 test('each category has a static calculator list', () => {
   expect(getCalculatorsByCategory('car').map(({ slug }) => slug)).toContain('fuel-cost');
-  expect(getCalculatorsByCategory('salary')).toEqual([]);
+  expect(getCalculatorsByCategory('salary')).toHaveLength(9);
 });
 
 test('calculator pages use the registered category label', () => {

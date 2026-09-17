@@ -12,6 +12,9 @@ import { calculatePurchaseCost } from '@/lib/car/purchase';
 import { calculateRepaymentPlans, calculateSimpleInterest, type RepaymentRow, type SimpleInterestInput } from '@/lib/finance/loan';
 import { calculateCompoundSavings, type CompoundSavingsRow } from '@/lib/finance/compound';
 import { calculateMonthlyBudget } from '@/lib/life/budget';
+import { calculateHourlyMonthlyPay, calculateTakeHomePay, calculateWeeklyHolidayPay } from '@/lib/salary/pay';
+import { calculateAnnualLeaveAllowance, calculateParentalLeaveEstimate, calculateSeverancePay, calculateUnemploymentBenefitEstimate } from '@/lib/salary/benefits';
+import { calculateFreelancerWithholding, calculateSalaryNegotiation } from '@/lib/salary/planning';
 
 type Raw = Record<string, string>;
 export interface DisplayResult extends CalculatorResult {
@@ -41,6 +44,11 @@ const months = (raw: string) => {
   if (!value.isInteger()) throw new Error('기간은 정수 개월로 입력해 주세요.');
   return value.toNumber();
 };
+function wholeCount(raw: string, minimum: number, maximum = 1200) {
+  const value = bounded(parseNonNegativeDecimal, new Decimal(maximum))(raw);
+  if (!value.isInteger() || value.lt(minimum)) throw new Error(minimum === 0 ? '0 이상의 정수를 입력해 주세요.' : `${minimum} 이상의 정수를 입력해 주세요.`);
+  return value.toNumber();
+}
 function number(name: string, label: string, unit: string, example: string, parser: (raw: string) => unknown = money, hint = '원 단위 정수로 입력'): CalculatorField {
   const formattedExample = example ? formatNumber(example, 0) : '';
   return { name, label, unit, required: true, defaultValue: example, hint: formattedExample ? `${hint ? `${hint} · ` : ''}예: ${formattedExample}` : hint, validate: (raw) => { try { parser(raw); } catch (error) { return error instanceof Error ? error.message : '입력값을 확인해 주세요.'; } } };
@@ -57,6 +65,10 @@ const repaymentMonths = number('months', '상환 기간', '개월', '12', months
 const modes = [{ value: 'equalPayment', label: '원리금균등' }, { value: 'equalPrincipal', label: '원금균등' }, { value: 'bullet', label: '만기일시' }] as const;
 const won = (label: string, value: Decimal.Value): ResultValue => ({ label, value: formatWon(value) });
 const loanInput = (raw: Raw) => ({ principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months) });
+const reviewedYear = { label: '기준연도', value: '2026년 · 검토일 2026-09-17' };
+const benefitRows = (assumption: string): ReadonlyArray<ResultValue> => [reviewedYear, { label: '계산 가정', value: assumption }, { label: '실제 지급·수급 자격', value: '근로·고용보험·휴직 등 실제 요건은 별도 확인' }];
+const manualRate = (name: string, label: string) => number(name, label, '%', '', rate, '수동 설정 · 0~100%');
+const manualMoney = (name: string, label: string) => number(name, label, '원', '', money, '수동 설정 · 0원 이상');
 
 function define<I, O>(slug: typeof calculators[number]['slug'], fields: ReadonlyArray<CalculatorField>, parse: (raw: Raw) => I, calculate: (input: I) => O, present: (output: O) => DisplayResult): RegisteredCalculator & CalculatorDefinition<I, O> {
   const entry = calculators.find((calculator) => calculator.slug === slug)!;
@@ -112,4 +124,56 @@ const budget = define('monthly-budget', [number('incomeWon', '월 순수입', '�
   (raw) => ({ incomeWon: money(raw.incomeWon), housingWon: money(raw.housingWon), carWon: money(raw.carWon), foodWon: money(raw.foodWon), communicationsWon: money(raw.communicationsWon), healthWon: money(raw.healthWon), otherFixedWon: money(raw.otherFixedWon), variableWon: money(raw.variableWon), savingsTargetWon: money(raw.savingsTargetWon) }), calculateMonthlyBudget,
   (result) => ({ summary: won('목표 저축액 반영 후 잔여 금액', result.remainingAfterSavingsWon), rows: [won('지출 총액', result.totalSpendingWon), { label: '수입 대비 지출 비율 (수입 0원일 때 0% 표시)', value: formatPercent(result.spendingRatio) }, ...result.categories.map((item) => ({ label: item.label, value: `${formatWon(item.costWon)} (${formatPercent(item.ratio)})` }))] }));
 
-export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget];
+const takeHome = define('take-home-pay', [
+  number('annualSalaryWon', '연봉', '원', '36000000'), number('monthlyNonTaxableWon', '월 비과세액', '원', '0'),
+  number('dependents', '부양가족 수(본인 포함)', '명', '1', (raw) => new Decimal(wholeCount(raw, 1)), '1명 이상 정수'),
+  number('childDependents', '자녀 수(부양가족에 포함)', '명', '0', (raw) => new Decimal(wholeCount(raw, 0)), '0명 이상 정수'),
+  manualRate('pensionEmployeeRatePercent', '국민연금 근로자 요율'), manualMoney('pensionMonthlyLowerBaseWon', '국민연금 월 기준소득 하한'), manualMoney('pensionMonthlyUpperBaseWon', '국민연금 월 기준소득 상한'),
+  manualRate('healthEmployeeRatePercent', '건강보험 근로자 요율'), manualRate('longTermCareRateOfHealthPercent', '장기요양 건강보험료 대비 요율'), manualRate('employmentEmployeeRatePercent', '고용보험 근로자 요율'),
+  manualMoney('monthlyIncomeTaxWon', '월 소득세(수동 입력)'), manualRate('localIncomeTaxRatePercent', '지방소득세 소득세 대비 요율'),
+], (raw) => {
+  const dependents = wholeCount(raw.dependents, 1);
+  const childDependents = wholeCount(raw.childDependents, 0);
+  return {
+    annualSalaryWon: money(raw.annualSalaryWon), monthlyNonTaxableWon: money(raw.monthlyNonTaxableWon), dependents, childDependents,
+    policy: {
+      pensionEmployeeRatePercent: rate(raw.pensionEmployeeRatePercent), pensionMonthlyLowerBaseWon: money(raw.pensionMonthlyLowerBaseWon), pensionMonthlyUpperBaseWon: money(raw.pensionMonthlyUpperBaseWon),
+      healthEmployeeRatePercent: rate(raw.healthEmployeeRatePercent), longTermCareRateOfHealthPercent: rate(raw.longTermCareRateOfHealthPercent), employmentEmployeeRatePercent: rate(raw.employmentEmployeeRatePercent), localIncomeTaxRatePercent: rate(raw.localIncomeTaxRatePercent),
+      incomeTaxTable: [{ monthlyFromWon: new Decimal(0), monthlyToExclusiveWon: null, dependents, childDependents, taxWon: money(raw.monthlyIncomeTaxWon) }],
+    },
+  };
+}, calculateTakeHomePay, (result) => ({ summary: won('월 예상 실수령액(수동 설정)', result.monthlyTakeHomeWon), rows: [won('월 총급여', result.monthlyGrossWon), won('월 과세 대상 급여', result.monthlyTaxableWon), won('국민연금', result.deductions.pensionWon), won('건강보험', result.deductions.healthWon), won('장기요양보험료', result.deductions.longTermCareWon), won('고용보험', result.deductions.employmentWon), won('소득세', result.deductions.incomeTaxWon), won('지방소득세', result.deductions.localIncomeTaxWon), won('공제 합계', result.totalDeductionsWon), reviewedYear, { label: '계산 가정', value: '모든 요율·기준소득·월 소득세를 수동 입력한 예상값' }] }));
+
+const hourlyMonthly = define('hourly-monthly-pay', [number('hourlyWon', '시급', '원', '10000'), number('weeklyHours', '주 소정근로시간', '시간', '40', nonnegative, '0시간 이상'), number('paidWeeks', '유급 주 수', '주', '4', nonnegative, '0주 이상')],
+  (raw) => ({ hourlyWon: money(raw.hourlyWon), weeklyHours: nonnegative(raw.weeklyHours), paidWeeks: nonnegative(raw.paidWeeks) }), calculateHourlyMonthlyPay,
+  (result) => ({ summary: won('월 급여 예상액', result.totalWon), rows: [won('기본급', result.baseWon), won('주휴수당 가정액', result.holidayAllowanceWon), { label: '계산 가정', value: '입력한 유급 주 수와 5일·40시간 비교를 사용' }] }));
+
+const weeklyHoliday = define('weekly-holiday-pay', [number('hourlyWon', '시급', '원', '10000'), number('weeklyHours', '4주 평균 주 소정근로시간', '시간', '40', nonnegative, '0시간 이상'), number('weeksWorked', '요건 충족 주 수', '주', '4', nonnegative, '0주 이상')],
+  (raw) => ({ hourlyWon: money(raw.hourlyWon), weeklyHours: nonnegative(raw.weeklyHours), weeksWorked: nonnegative(raw.weeksWorked) }), calculateWeeklyHolidayPay,
+  (result) => ({ summary: won('주휴수당 예상액', result.allowanceWon), rows: [{ label: '주당 주휴 시간', value: `${formatNumber(result.holidayHoursPerWeek)}시간` }, ...benefitRows('4주 평균 15시간 이상과 출근 등 요건 충족을 전제') ] }));
+
+const severance = define('severance-pay', [number('averageDailyWageWon', '1일 평균임금', '원', '100000'), number('continuousServiceDays', '계속근로 재직일수', '일', '730', (raw) => new Decimal(wholeCount(raw, 0, 50000)), '0일 이상 정수')],
+  (raw) => ({ averageDailyWageWon: money(raw.averageDailyWageWon), continuousServiceDays: wholeCount(raw.continuousServiceDays, 0, 50000) }), calculateSeverancePay,
+  (result) => ({ summary: won('퇴직금 예상액', result.estimatedWon), rows: benefitRows('1일 평균임금 × 30 × 재직일수 ÷ 365 공식만 적용') }));
+
+const annualLeave = define('annual-leave-allowance', [number('unusedDays', '지급 대상 미사용 연차', '일', '10', nonnegative, '0일 이상'), number('ordinaryDailyWageWon', '1일 통상임금', '원', '100000')],
+  (raw) => ({ unusedDays: nonnegative(raw.unusedDays), ordinaryDailyWageWon: money(raw.ordinaryDailyWageWon) }), calculateAnnualLeaveAllowance,
+  (result) => ({ summary: won('미사용 연차수당 예상액', result.allowanceWon), rows: benefitRows('이미 확인한 지급 대상 미사용 일수와 1일 통상임금만 적용') }));
+
+const unemployment = define('unemployment-benefit', [number('dailyWageWon', '기초일액', '원', '100000'), number('eligibleDays', '소정급여일수', '일', '120', (raw) => new Decimal(wholeCount(raw, 0, 1200)), '0일 이상 정수'), manualMoney('dailyLowerLimitWon', '구직급여 1일 하한'), manualMoney('dailyUpperLimitWon', '구직급여 1일 상한')],
+  (raw) => ({ dailyWageWon: money(raw.dailyWageWon), eligibleDays: wholeCount(raw.eligibleDays, 0, 1200), dailyLowerLimitWon: money(raw.dailyLowerLimitWon), dailyUpperLimitWon: money(raw.dailyUpperLimitWon) }), calculateUnemploymentBenefitEstimate,
+  (result) => ({ summary: won('구직급여 총 예상액', result.totalBenefitWon), rows: [won('1일 구직급여 예상액', result.dailyBenefitWon), ...benefitRows('기초일액의 60%에 수동 입력한 1일 하한·상한을 적용') ] }));
+
+const parentalLeave = define('parental-leave-benefit', [number('ordinaryMonthlyWageWon', '월 통상임금', '원', '3000000'), number('months', '휴직 개월 수', '개월', '3', months, '1~1,200개월, 정수'), manualRate('replacementRatePercent', '월 급여 지급률'), manualMoney('monthlyCapWon', '월 급여 상한')],
+  (raw) => ({ ordinaryMonthlyWageWon: money(raw.ordinaryMonthlyWageWon), months: months(raw.months), replacementRatePercent: rate(raw.replacementRatePercent), monthlyCapWon: money(raw.monthlyCapWon) }), calculateParentalLeaveEstimate,
+  (result) => ({ summary: won('육아휴직 급여 총 예상액', result.totalBenefitWon), rows: [won('월 급여 시나리오', result.monthlyBenefitWon), ...benefitRows('모든 월에 동일한 수동 입력 지급률·상한을 적용한 평면 시나리오') ] }));
+
+const negotiation = define('salary-negotiation', [number('currentAnnualWon', '현재 연봉', '원', '40000000'), number('desiredAnnualWon', '목표 연봉', '원', '44000000')],
+  (raw) => ({ currentAnnualWon: money(raw.currentAnnualWon), desiredAnnualWon: money(raw.desiredAnnualWon) }), calculateSalaryNegotiation,
+  (result) => ({ summary: won('연봉 차이', result.annualIncreaseWon), rows: [won('월 차이', result.monthlyIncreaseWon), { label: '연봉 인상률', value: formatPercent(result.increasePercent) }, { label: '계산 가정', value: '연봉을 12개월에 균등 배분해 비교' }] }));
+
+const freelancer = define('freelancer-withholding', [number('grossWon', '총 수입', '원', '1000000'), number('deductibleExpenseWon', '차감 경비', '원', '200000'), manualRate('withholdingRatePercent', '원천징수율')],
+  (raw) => ({ grossWon: money(raw.grossWon), deductibleExpenseWon: money(raw.deductibleExpenseWon), withholdingRatePercent: rate(raw.withholdingRatePercent) }), calculateFreelancerWithholding,
+  (result) => ({ summary: won('원천징수 후 수령액', result.netReceiptWon), rows: [won('경비 차감 후 대상 시나리오', result.taxableBaseWon), won('원천징수 예상액', result.withholdingWon), { label: '계산 가정', value: '입력 경비를 뺀 금액에 수동 입력 세율을 적용한 시나리오' }] }));
+
+export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer];

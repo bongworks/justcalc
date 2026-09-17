@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { getCalculatorBySlug } from '@/lib/calculators/registry';
+import { getCalculatorByCategoryAndSlug, getCalculatorBySlug } from '@/lib/calculators/registry';
 
 it('distinguishes entered initial cash from additional cash required for a purchase', () => {
   const result = getCalculatorBySlug('purchase-cost')!.evaluate({
@@ -24,4 +24,12 @@ it('keeps examples but does not expose the implementation maximum in visible hin
   expect(annualDistance?.hint).toBe('예: 12,000');
   expect(insurance?.hint).toBe('원 단위 정수로 입력 · 예: 800,000');
   expect(JSON.stringify(maintenance.fields)).not.toContain('최대 1,000조');
+});
+
+it('registers salary calculators with the canonical salary route and an estimate warning', () => {
+  expect(getCalculatorByCategoryAndSlug('salary', 'severance-pay')).toMatchObject({
+    route: '/salary/severance-pay/',
+    title: '퇴직금 계산기',
+  });
+  expect(getCalculatorBySlug('take-home-pay')?.guide.limitations.join(' ')).toMatch(/예상/);
 });

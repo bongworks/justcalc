@@ -1,11 +1,23 @@
 import { expect, test } from '@playwright/test';
+import { calculatorDefinitions } from '@/lib/calculators/definitions';
 
-const paths = ['/car/maintenance-cost/', '/car/fuel-cost/', '/car/ev-charging-cost/', '/car/purchase-cost/', '/car/installment/', '/finance/loan-interest/', '/finance/loan-repayment/', '/finance/compound-interest/', '/life/monthly-budget/'];
+const calculatorPaths = calculatorDefinitions.map(({ route }) => route);
+const calculationInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  'take-home-pay': {
+    pensionEmployeeRatePercent: '1', pensionMonthlyLowerBaseWon: '0', pensionMonthlyUpperBaseWon: '10000000', healthEmployeeRatePercent: '1', longTermCareRateOfHealthPercent: '1', employmentEmployeeRatePercent: '1', monthlyIncomeTaxWon: '0', localIncomeTaxRatePercent: '1',
+  },
+  'unemployment-benefit': { dailyLowerLimitWon: '0', dailyUpperLimitWon: '10000000' },
+  'parental-leave-benefit': { replacementRatePercent: '50', monthlyCapWon: '2000000' },
+  'freelancer-withholding': { withholdingRatePercent: '3' },
+};
 
-test('all nine calculators calculate locally without persisting values', async ({ page }) => {
-  for (const path of paths) {
-    const response = await page.goto(path, { waitUntil: 'domcontentloaded' });
+test('all registered calculators calculate locally without persisting values', async ({ page }) => {
+  for (const calculator of calculatorDefinitions) {
+    const response = await page.goto(calculator.route, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBe(200);
+    for (const [name, value] of Object.entries(calculationInputs[calculator.slug] ?? {})) {
+      await page.locator(`[name="${name}"]`).fill(value);
+    }
     await expect(page.getByRole('button', { name: '계산하기' })).toBeEnabled();
     const requests: string[] = [];
     const record = (request: import('@playwright/test').Request) => {
@@ -15,7 +27,7 @@ test('all nine calculators calculate locally without persisting values', async (
     await page.getByRole('button', { name: '계산하기' }).click();
     await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toBeVisible();
     await expect(page.locator('.result-panel')).not.toContainText(/NaN|Infinity/);
-    await expect(page).toHaveURL(path);
+    await expect(page).toHaveURL(calculator.route);
     expect(requests).toEqual([]);
     page.off('request', record);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
@@ -109,7 +121,7 @@ test('calculator workspace uses a responsive form-first grid', async ({ page, is
 });
 
 test('all calculators show an original category banner and maintain form-first mobile order', async ({ page, isMobile }) => {
-  for (const path of paths) {
+  for (const path of calculatorPaths) {
     await page.goto(path);
     const banner = page.locator('.calculator-category-banner');
     await expect(banner).toBeVisible();
