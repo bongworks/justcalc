@@ -4,7 +4,7 @@ const paths = ['/car/maintenance-cost/', '/car/fuel-cost/', '/car/ev-charging-co
 
 test('all nine calculators calculate locally without persisting values', async ({ page }) => {
   for (const path of paths) {
-    const response = await page.goto(path);
+    const response = await page.goto(path, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBe(200);
     await expect(page.getByRole('button', { name: '계산하기' })).toBeEnabled();
     const requests: string[] = [];
