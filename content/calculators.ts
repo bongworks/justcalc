@@ -391,4 +391,194 @@ export const calculators = [
       sources: [{ label: '한국은행 경제통계시스템 · 환율 참고 자료(자동 연동 없음)', href: 'https://ecos.bok.or.kr/' }],
     },
   },
+  {
+    slug: 'acquisition-tax', category: 'realestate', route: '/realestate/acquisition-tax/',
+    title: '취득세 계산기', description: '취득 금액과 직접 확인한 세율로 단순 취득세 예상액을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['brokerage-fee', 'housing-affordability'],
+    guide: {
+      formula: '예상 취득세 = 취득 금액 × 입력 세율 ÷ 100',
+      examples: [{ title: '임의 세율 2% 시나리오', text: '취득 금액 1억원, 직접 입력한 세율 2%이면 예상액은 200만원입니다. 법정 적용 세율을 뜻하지 않습니다.' }, { title: '임의 세율 1% 시나리오', text: '취득 금액 2억원에 세율 1%를 입력하면 200만원입니다. 실제 적용 세율은 별도로 확인하세요.' }],
+      limitations: ['입력 세율만 적용한 예상값이며 법정 취득세를 판정하지 않습니다.', '지역·주택 수·중과·감면·부가 세목과 과세표준 차이는 자동 반영하지 않습니다.'],
+      sources: [{ label: '위택스 · 적용 세율과 세목 별도 확인', href: 'https://www.wetax.go.kr/' }],
+    },
+  },
+  {
+    slug: 'brokerage-fee', category: 'realestate', route: '/realestate/brokerage-fee/',
+    title: '중개보수 계산기', description: '거래 금액과 수동 요율·상한으로 중개보수 예상액을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['acquisition-tax', 'moving-budget'],
+    guide: {
+      formula: '예상 보수 = 거래 금액 × 입력 요율 ÷ 100과 입력 상한 중 작은 값',
+      examples: [{ title: '입력 상한 적용', text: '거래 금액 1억원, 임의 요율 1%, 상한 30만원이면 결과는 30만원입니다.' }, { title: '요율 금액 적용', text: '거래 금액 1억원, 임의 요율 0.2%, 상한 50만원이면 결과는 20만원입니다.' }],
+      limitations: ['법정 요율표를 내장하지 않은 예상값입니다. 계약 유형과 지역에 맞는 요율·상한을 직접 확인하세요.', '상한 0원은 보수 0원으로 계산합니다. 부가세·협의 할인·월세 거래금액 환산은 포함하지 않습니다.'],
+      sources: [{ label: '국가법령정보센터 · 공인중개사법 및 지역 조례 확인', href: 'https://www.law.go.kr/' }],
+    },
+  },
+  {
+    slug: 'deposit-rent-conversion', category: 'realestate', route: '/realestate/deposit-rent-conversion/',
+    title: '전월세 전환 계산기', description: '전환 대상 보증금과 직접 입력한 연 전환율로 기간 임대료를 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['rent-vs-deposit', 'rental-yield'],
+    guide: {
+      formula: '기간 환산 임대료 = 보증금 × 연 전환율 ÷ 100 × 개월 수 ÷ 12',
+      examples: [{ title: '한 달 환산', text: '보증금 1억2천만원, 임의 연 전환율 4%, 1개월이면 40만원입니다.' }, { title: '세 달 환산', text: '같은 보증금과 전환율로 3개월을 입력하면 기간 합계는 120만원입니다.' }],
+      limitations: ['수동 전환율로 산출한 예상값이며 법정 전환율 상한이나 계약 적법성을 판단하지 않습니다.', '전체 보증금 대신 실제 전환하려는 차액을 입력하세요. 복리·세금은 제외합니다.'],
+      sources: [{ label: '국가법령정보센터 · 주택임대차보호법 확인', href: 'https://www.law.go.kr/' }],
+    },
+  },
+  {
+    slug: 'rent-vs-deposit', category: 'realestate', route: '/realestate/rent-vs-deposit/',
+    title: '전세·월세 비교 계산기', description: '보증금의 기회비용과 월세를 합산해 각 계약의 월 환산 비용을 비교합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['deposit-rent-conversion', 'monthly-budget'],
+    guide: {
+      formula: '월 환산 비용 = 월세 + 보증금 × 입력 연 기회비용률 ÷ 100 ÷ 12',
+      examples: [{ title: '전세 조건', text: '보증금 1억2천만원, 월세 0원, 연 기회비용률 4%이면 월 환산 비용은 40만원입니다.' }, { title: '월세 조건 비교', text: '보증금 6천만원, 월세 30만원, 같은 4%이면 월 환산 비용은 50만원으로 앞 조건보다 10만원 큽니다.' }],
+      limitations: ['각 계약 조건을 차례로 입력해 비교하는 예상값입니다. 기회비용은 실제 월 청구액이 아닙니다.', '대출 구조·보증금 반환 위험·관리비·세금·가격 변동은 반영하지 않습니다.'],
+      sources: [{ label: '금융감독원 파인 · 금융 비용 확인', href: 'https://fine.fss.or.kr/' }],
+    },
+  },
+  {
+    slug: 'moving-budget', category: 'realestate', route: '/realestate/moving-budget/',
+    title: '이사 비용 계산기', description: '이사·청소·중개보수와 기타 지출을 합산해 예상 예산을 정리합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['brokerage-fee', 'one-person-setup-budget'],
+    guide: {
+      formula: '이사 예산 = 이사비 + 청소비 + 중개보수 + 기타 비용',
+      examples: [{ title: '견적 합산', text: '이사비 50만원, 청소비 20만원, 중개보수 30만원, 기타 10만원이면 총 110만원입니다.' }, { title: '직접 이사', text: '운송 10만원과 기타 5만원, 나머지 0원이면 총 15만원입니다.' }],
+      limitations: ['직접 입력한 견적 합계인 예상값이며 시세를 조회하지 않습니다.', '보증금·가구·가전 등 입력하지 않은 항목은 제외됩니다. 기타 비용에 중복 합산하지 마세요.'],
+      sources: [{ label: '한국소비자원 · 이사 서비스 계약 참고', href: 'https://www.kca.go.kr/' }],
+    },
+  },
+  {
+    slug: 'one-person-setup-budget', category: 'realestate', route: '/realestate/one-person-setup-budget/',
+    title: '자취 초기비용 계산기', description: '가구·가전·생활용품과 기타 준비 비용으로 자취 초기 예산을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['moving-budget', 'monthly-budget'],
+    guide: {
+      formula: '초기 준비 예산 = 가구 + 가전 + 생활용품 + 기타 비용',
+      examples: [{ title: '새 살림 마련', text: '가구 30만원, 가전 50만원, 생활용품 10만원, 기타 10만원이면 총 100만원입니다.' }, { title: '옵션 주택 입주', text: '가구·가전 0원, 생활용품 10만원, 기타 5만원이면 총 15만원입니다.' }],
+      limitations: ['구매 계획을 더한 예상값으로 실제 판매 가격·배송비를 자동 조회하지 않습니다.', '보증금·월세·이사비는 별도 예산입니다. 필요하면 기타 비용에 직접 포함하세요.'],
+      sources: [{ label: '한국소비자원 · 소비 지출 참고', href: 'https://www.kca.go.kr/' }],
+    },
+  },
+  {
+    slug: 'housing-affordability', category: 'realestate', route: '/realestate/housing-affordability/',
+    title: '주택 구매 여력 계산기', description: '가용 현금, 수동 상환비율·금리·대출한도로 감당 가능한 주택 예산을 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['loan-affordability', 'acquisition-tax', 'holding-cost-checklist'],
+    guide: {
+      formula: '주택 예산 = 가용 현금 + min(월 상환 여력을 원리금균등으로 환산한 원금, 직접 입력한 대출한도)',
+      examples: [{ title: '입력 한도 적용', text: '현금 1천만원, 월소득 300만원, 기존 상환 20만원, 허용비율 20%, 금리 0%, 12개월이면 원금 여력은 480만원입니다. 한도 400만원이면 주택 예산은 1,400만원입니다.' }, { title: '상환 여력 적용', text: '같은 조건에서 한도만 900만원으로 입력하면 여력 480만원을 적용해 주택 예산은 1,480만원입니다.' }],
+      limitations: ['입력 비율·금리·한도에 따른 예상값이며 대출 승인·법정 DSR·LTV·지역 규제를 예측하지 않습니다.', '가용 현금은 취득세·중개보수·비상자금을 별도로 제외한 금액을 입력하세요. 고정금리 원리금균등을 가정합니다.', '기존 상환이 허용 예산 이상이면 추가 대출 여력을 0원으로 처리합니다.'],
+      sources: [{ label: '금융감독원 파인 · 대출 계약 조건 별도 확인', href: 'https://fine.fss.or.kr/' }],
+    },
+  },
+  {
+    slug: 'rental-yield', category: 'realestate', route: '/realestate/rental-yield/',
+    title: '임대 수익률 계산기', description: '연 임대료에서 입력 비용을 뺀 금액을 매입가와 비교해 수익률을 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['holding-cost-checklist', 'deposit-rent-conversion'],
+    guide: {
+      formula: '수익률 = max(연 임대료 − 연 비용, 0) ÷ 매입가 × 100',
+      examples: [{ title: '양의 임대수익', text: '매입가 1억원, 연 임대료 1,200만원, 연 비용 200만원이면 수익률은 10%입니다.' }, { title: '비용이 더 큰 경우', text: '연 임대료 500만원, 연 비용 600만원이면 손실률 대신 0%를 표시합니다.' }],
+      limitations: ['순임대료를 0원 아래로 내리지 않는 예상 지표로 손실률을 나타내지 않습니다. 매입가 0원도 편의상 0%로 표시합니다.', '시세차익·보증금·차입금·취득 부대비용은 자동 반영하지 않습니다.'],
+      sources: [{ label: '한국부동산원 · 임대시장 자료 참고', href: 'https://www.reb.or.kr/' }],
+    },
+  },
+  {
+    slug: 'holding-cost-checklist', category: 'realestate', route: '/realestate/holding-cost-checklist/',
+    title: '주택 보유비용 체크리스트', description: '직접 확인한 연간 세금·보험·관리·이자·기타 비용을 합산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['rental-yield', 'housing-affordability'],
+    guide: {
+      formula: '연간 보유비 = 연 세금 + 연 보험료 + 연 관리·수선비 + 연 이자 + 연 기타 비용',
+      examples: [{ title: '연간 지출 정리', text: '세금 10만원, 보험 20만원, 관리 30만원, 이자 40만원, 기타 50만원이면 연 150만원입니다.' }, { title: '대출 없는 주택', text: '세금 30만원, 보험 10만원, 관리 80만원, 이자·기타 0원이면 연 120만원입니다.' }],
+      limitations: ['고지서·견적에서 직접 입력한 연간 비용의 예상 합계입니다. 지역별 재산세·종부세를 예측하지 않습니다.', '월 지출은 12개월분으로 환산해 입력하세요. 원금 상환·감가상각·거래 비용은 별도입니다.'],
+      sources: [{ label: '위택스 · 실제 지방세 고지 내역 확인', href: 'https://www.wetax.go.kr/' }],
+    },
+  },
+  {
+    slug: 'vat', category: 'business', route: '/business/vat/', title: '부가세 계산기',
+    description: '직접 입력한 세율로 부가세 포함·별도 금액을 나눠 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['margin', 'online-market-settlement'],
+    guide: {
+      formula: '별도: 부가세 = 공급가 × 세율 ÷ 100 / 포함: 공급가 = 합계 ÷ (1 + 세율 ÷ 100)',
+      examples: [{ title: '별도 금액', text: '공급가 10만원, 임의 세율 10%이면 부가세 1만원, 합계 11만원입니다.' }, { title: '포함 금액', text: '합계 11만원, 같은 10%로 포함 계산하면 공급가 10만원과 부가세 1만원으로 나뉩니다.' }],
+      limitations: ['입력 세율을 적용한 예상값입니다. 면세·영세율·간이과세·매입세액 공제·실제 납부세액은 판단하지 않습니다.', '세율은 직접 확인해 입력하며 각 표시 금액은 원 단위로 반올림합니다.'],
+      sources: [{ label: '국세청 · 부가가치세 안내', href: 'https://www.nts.go.kr/' }],
+    },
+  },
+  {
+    slug: 'margin', category: 'business', route: '/business/margin/', title: '마진율 계산기',
+    description: '매출에서 원가를 뺀 이익과 매출 기준 마진율을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['markup', 'break-even'],
+    guide: {
+      formula: '마진율 = (매출 − 원가) ÷ 매출 × 100',
+      examples: [{ title: '이익 발생', text: '매출 10만원, 원가 8만원이면 이익 2만원, 마진율 20%입니다.' }, { title: '손실 발생', text: '매출 10만원, 원가 12만원이면 이익 −2만원, 마진율 −20%입니다.' }],
+      limitations: ['입력 비용만 반영한 예상 지표로 순이익률과 다를 수 있습니다.', '매출 0원은 비율을 계산할 수 없어 편의상 0%로 표시합니다. 부가세 포함 여부를 통일하세요.'],
+      sources: [{ label: 'OpenStax 재무회계 · 재무제표 비율 분석', href: 'https://openstax.org/books/principles-financial-accounting/pages/14-1-financial-statement-analysis' }],
+    },
+  },
+  {
+    slug: 'markup', category: 'business', route: '/business/markup/', title: '원가 가산율 계산기',
+    description: '판매 이익을 원가로 나눠 원가 대비 가산율을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['margin', 'discount-rate'],
+    guide: {
+      formula: '원가 가산율 = (매출 − 원가) ÷ 원가 × 100',
+      examples: [{ title: '25% 가산', text: '매출 10만원, 원가 8만원이면 이익 2만원, 가산율 25%입니다.' }, { title: '원가 이하 판매', text: '매출 8만원, 원가 10만원이면 가산율은 −20%입니다.' }],
+      limitations: ['입력 원가 기준 예상 지표이며 매출을 분모로 쓰는 마진율과 다릅니다.', '원가 0원은 비율을 계산할 수 없어 편의상 0%로 표시합니다. 세금·고정비는 입력 원가에 포함한 만큼만 반영됩니다.'],
+      sources: [{ label: 'OpenStax 관리회계 · 비용과 가격 의사결정', href: 'https://openstax.org/details/books/principles-managerial-accounting' }],
+    },
+  },
+  {
+    slug: 'break-even', category: 'business', route: '/business/break-even/', title: '손익분기점 계산기',
+    description: '고정비와 단가·단위 변동비로 손익분기 판매 수량을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['margin', 'business-feasibility'],
+    guide: {
+      formula: '손익분기 수량 = 올림(고정비 ÷ (판매단가 − 단위 변동비))',
+      examples: [{ title: '250개 판매', text: '고정비 100만원, 단가 1만원, 단위 변동비 6천원이면 250개, 매출 250만원이 필요합니다.' }, { title: '분기점 도달 불가', text: '단가와 단위 변동비가 모두 1만원이면 판매당 기여이익이 없어 도달 불가를 표시합니다.' }],
+      limitations: ['모든 제품이 같은 단가·변동비를 가진 예상 시나리오입니다. 수량은 정수로 올림합니다.', '단가가 단위 변동비 이하이면 도달 불가로 표시합니다. 고정비의 기간과 판매 목표 기간을 맞추세요.'],
+      sources: [{ label: 'OpenStax 관리회계 · 단일 제품 손익분기점', href: 'https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars' }],
+    },
+  },
+  {
+    slug: 'sales-commission', category: 'business', route: '/business/sales-commission/', title: '판매 수수료 계산기',
+    description: '입력한 플랫폼·결제 수수료율과 배송비를 매출에서 차감합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['online-market-settlement', 'margin'],
+    guide: {
+      formula: '정산액 = 총매출 − 총매출 × (플랫폼 요율 + 결제 요율) ÷ 100 − 배송비',
+      examples: [{ title: '수수료와 배송비', text: '매출 100만원, 임의 플랫폼 요율 10%, 결제 2%, 배송비 3만원이면 예상 정산액 85만원입니다.' }, { title: '수수료 없는 거래', text: '매출 10만원, 두 요율 0%, 배송비 5천원이면 9만5천원입니다.' }],
+      limitations: ['요율을 직접 입력한 예상 정산액입니다. 두 요율 모두 총매출에 적용합니다.', '수수료 부가세·최저 수수료·반품·원가·세금은 자동 반영하지 않습니다. 실제 계약과 대조하세요.'],
+      sources: [{ label: '소상공인24 · 사업 운영 정보 참고', href: 'https://www.sbiz24.kr/' }],
+    },
+  },
+  {
+    slug: 'online-market-settlement', category: 'business', route: '/business/online-market-settlement/', title: '온라인 판매 정산 계산기',
+    description: '총매출에서 직접 설정한 수수료·배송비·반품액을 차감해 예상 정산액을 봅니다.', lastReviewed: '2026-09-17', relatedSlugs: ['sales-commission', 'monthly-profit-loss'],
+    guide: {
+      formula: '정산액 = 총매출 − 총매출 기준 플랫폼·결제 수수료 − 배송비 − 반품액',
+      examples: [{ title: '반품 포함 정산', text: '매출 100만원, 임의 요율 10%와 2%, 배송 3만원, 반품 5만원이면 80만원입니다.' }, { title: '반품 없는 정산', text: '같은 조건에서 반품 0원이면 85만원입니다.' }],
+      limitations: ['입력 요율 기준 예상값으로 특정 플랫폼 정산 규칙을 재현하지 않습니다.', '수수료는 반품 차감 전 총매출에 적용하며 수수료 환급·정산 보류·원가·세금은 제외됩니다.'],
+      sources: [{ label: '소상공인24 · 온라인 사업 운영 참고', href: 'https://www.sbiz24.kr/' }],
+    },
+  },
+  {
+    slug: 'freelancer-net-income', category: 'business', route: '/business/freelancer-net-income/', title: '프리랜서 순수입 계산기',
+    description: '총수입에 직접 입력한 원천징수율을 적용하고 지출 경비를 차감합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['monthly-profit-loss', 'vat'],
+    guide: {
+      formula: '예상 순수입 = 총수입 − 총수입 × 입력 원천징수율 ÷ 100 − 지출 경비',
+      examples: [{ title: '원천징수와 경비', text: '총수입 100만원, 임의 원천징수율 3%, 경비 20만원이면 예상 순수입 77만원입니다.' }, { title: '경비가 큰 달', text: '총수입 100만원, 원천징수율 0%, 경비 120만원이면 예상 순수입 −20만원입니다.' }],
+      limitations: ['수동 요율에 따른 현금흐름 예상값입니다. 원천징수는 경비 차감 전 총수입에 적용합니다.', '종합소득세 확정액·필요경비 인정·부가세·보험료·환급 여부는 판단하지 않습니다.'],
+      sources: [{ label: '국세청 · 원천징수 및 종합소득세 안내', href: 'https://www.nts.go.kr/' }],
+    },
+  },
+  {
+    slug: 'monthly-profit-loss', category: 'business', route: '/business/monthly-profit-loss/', title: '월 손익 계산기',
+    description: '월 매출에서 고정비와 변동비 합계를 빼 예상 월 이익 또는 손실을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['business-feasibility', 'break-even'],
+    guide: {
+      formula: '월 손익 = 월 매출 − 월 고정비 − 월 변동비',
+      examples: [{ title: '흑자 시나리오', text: '월 매출 100만원, 고정비 30만원, 변동비 20만원이면 예상 이익 50만원입니다.' }, { title: '적자 시나리오', text: '월 매출 100만원, 고정비 30만원, 변동비 80만원이면 예상 손실 10만원입니다.' }],
+      limitations: ['입력 비용만 반영한 예상 손익이며 회계상 당기순이익이 아닙니다.', '감가상각·세금·대표자 인건비 등 필요한 비용은 직접 합산하고 중복 입력하지 마세요.'],
+      sources: [{ label: 'OpenStax 관리회계 · 원가와 이익 분석', href: 'https://openstax.org/details/books/principles-managerial-accounting' }],
+    },
+  },
+  {
+    slug: 'business-feasibility', category: 'business', route: '/business/business-feasibility/', title: '사업성 간단 계산기',
+    description: '초기 투자와 일정한 월 손익 가정으로 단순 투자금 회수 기간을 추정합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['monthly-profit-loss', 'break-even'],
+    guide: {
+      formula: '단순 회수 개월 수 = 초기 투자금 ÷ (월 매출 − 월 고정비 − 월 변동비)',
+      examples: [{ title: '두 달 회수 가정', text: '초기 투자 100만원, 월 매출 100만원, 고정비 30만원, 변동비 20만원이면 월 이익 50만원으로 2개월입니다.' }, { title: '손실 지속 가정', text: '월 매출 100만원, 고정비 30만원, 변동비 80만원이면 매월 손실이므로 회수 불가를 표시합니다.' }],
+      limitations: ['월 이익이 일정하고 전부 투자 회수에 사용된다는 예상값으로 사업 성공을 판단하지 않습니다.', '월 이익이 0 이하이면 회수 불가입니다. 할인율·성장률·추가 투자·세금·운전자금은 반영하지 않습니다.'],
+      sources: [{ label: 'OpenStax 관리회계 · 투자 회수 기간', href: 'https://openstax.org/books/principles-managerial-accounting/pages/11-2-evaluate-the-payback-and-accounting-rate-of-return-in-capital-investment-decisions' }],
+    },
+  },
+  {
+    slug: 'discount-rate', category: 'business', route: '/business/discount-rate/', title: '할인율 계산기',
+    description: '정가와 할인 판매가로 할인 금액과 정가 대비 할인율을 계산합니다.', lastReviewed: '2026-09-17', relatedSlugs: ['margin', 'markup'],
+    guide: {
+      formula: '할인율 = (정가 − 할인가) ÷ 정가 × 100',
+      examples: [{ title: '20% 할인', text: '정가 10만원, 할인가 8만원이면 할인액 2만원, 할인율 20%입니다.' }, { title: '반값 할인', text: '정가 4만원, 할인가 2만원이면 할인액 2만원, 할인율 50%입니다.' }],
+      limitations: ['입력 가격을 기준으로 산출한 예상 비교값입니다. 정가는 0원 초과, 할인가는 정가 이하여야 합니다.', '쿠폰·배송비·적립금·중복 할인은 자동 적용하지 않습니다. 비교 가격의 세금 포함 조건을 맞추세요.'],
+      sources: [{ label: '한국소비자원 · 가격 비교 참고', href: 'https://www.kca.go.kr/' }],
+    },
+  },
 ] as const satisfies ReadonlyArray<CalculatorCatalogEntry>;

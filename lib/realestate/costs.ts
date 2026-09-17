@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { calculateLoanAffordability, type LoanAffordabilityInput } from '@/lib/finance/affordability';
 
 export interface AcquisitionTaxInput {
   purchaseWon: Decimal;
@@ -70,4 +71,19 @@ export function calculateMovingBudget(input: ItemBudgetInput): { totalWon: Decim
 
 export function calculateSetupBudget(input: ItemBudgetInput): { totalWon: Decimal } {
   return sumBudget(input);
+}
+
+export function calculateHoldingCosts(input: ItemBudgetInput): { totalWon: Decimal } {
+  return sumBudget(input);
+}
+
+export interface HousingAffordabilityInput extends LoanAffordabilityInput {
+  cashWon: Decimal;
+  loanLimitWon: Decimal;
+}
+
+export function calculateHousingAffordability(input: HousingAffordabilityInput) {
+  const affordability = calculateLoanAffordability(input);
+  const financingWon = Decimal.min(affordability.affordablePrincipalWon, input.loanLimitWon);
+  return { ...affordability, financingWon, housingBudgetWon: input.cashWon.add(financingWon) };
 }

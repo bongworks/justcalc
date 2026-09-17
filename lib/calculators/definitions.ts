@@ -18,6 +18,8 @@ import { calculateMonthlyBudget } from '@/lib/life/budget';
 import { calculateHourlyMonthlyPay, calculateTakeHomePay, calculateWeeklyHolidayPay } from '@/lib/salary/pay';
 import { calculateAnnualLeaveAllowance, calculateParentalLeaveEstimate, calculateSeverancePay, calculateUnemploymentBenefitEstimate } from '@/lib/salary/benefits';
 import { calculateFreelancerWithholding, calculateSalaryNegotiation } from '@/lib/salary/planning';
+import { calculateAcquisitionTax, calculateBrokerageFee, calculateDepositRentConversion, calculateRentComparison, calculateMovingBudget, calculateSetupBudget, calculateHousingAffordability, calculateRentalYield, calculateHoldingCosts } from '@/lib/realestate/costs';
+import { calculateVat, calculateMargin, calculateMarkup, calculateBreakEven, calculateCommissionSettlement, calculateOnlineMarketSettlement, calculateFreelancerNetIncome, calculateMonthlyProfitLoss, calculateBusinessFeasibility, calculateDiscountRate, type CommissionSettlementResult } from '@/lib/business/profit';
 
 type Raw = Record<string, string>;
 export interface DisplayResult extends CalculatorResult {
@@ -219,4 +221,79 @@ const manualExchange = define('manual-exchange-rate', [number('amount', '외화 
   (raw) => ({ amount: nonnegative(raw.amount), wonPerUnit: positive(raw.wonPerUnit) }), convertCurrency,
   (result) => ({ summary: won('수동 환율 기준 원화 환산액', result.amountWon), rows: [{ label: '환율 기준', value: '직접 입력한 환율이며 실시간 환율이 아닙니다.' }, { label: '계산 범위', value: '외화 1단위당 원화 값 적용 · 환전·송금 수수료 제외' }] }));
 
-export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer, savingsMaturity, depositInterest, affordability, dsr, dti, ltv, cardInstalment, manualExchange];
+const acquisitionTax = define('acquisition-tax', [number('purchaseWon', '취득 금액', '원', '100000000'), manualRate('ratePercent', '직접 확인한 취득세율')],
+  (raw) => ({ purchaseWon: money(raw.purchaseWon), ratePercent: rate(raw.ratePercent) }), calculateAcquisitionTax,
+  (result) => ({ summary: won('입력 세율 기준 취득세 예상액', result.taxWon), rows: [{ label: '계산 범위', value: '지역·주택 수·감면·부가 세목을 판단하지 않는 단순 예상액' }] }));
+
+const brokerageFee = define('brokerage-fee', [number('transactionWon', '거래 금액', '원', '100000000'), manualRate('ratePercent', '직접 확인한 보수 요율'), manualMoney('capWon', '직접 확인한 보수 상한')],
+  (raw) => ({ transactionWon: money(raw.transactionWon), ratePercent: rate(raw.ratePercent), capWon: money(raw.capWon) }), calculateBrokerageFee,
+  (result) => ({ summary: won('중개보수 예상액', result.feeWon), rows: [{ label: '계산 범위', value: '입력 요율과 상한만 적용 · 법정 보수 판정·부가세 제외 · 상한 0원은 결과 0원' }] }));
+
+const depositConversion = define('deposit-rent-conversion', [number('depositWon', '전환 대상 보증금', '원', '120000000'), manualRate('conversionRatePercent', '직접 정한 연 전환율'), number('months', '환산 기간', '개월', '1', months, '1~1,200개월 정수')],
+  (raw) => ({ depositWon: money(raw.depositWon), conversionRatePercent: rate(raw.conversionRatePercent), months: months(raw.months) }), calculateDepositRentConversion,
+  (result) => ({ summary: won('기간 합계 환산 임대료', result.rentWon), rows: [{ label: '계산 범위', value: '입력한 연 전환율 기준 예상값 · 법정 상한 판단 제외' }] }));
+
+const rentComparison = define('rent-vs-deposit', [number('depositWon', '보증금', '원', '120000000'), number('monthlyRentWon', '월세', '원', '0'), manualRate('conversionRatePercent', '연 기회비용률')],
+  (raw) => ({ depositWon: money(raw.depositWon), monthlyRentWon: money(raw.monthlyRentWon), conversionRatePercent: rate(raw.conversionRatePercent) }), calculateRentComparison,
+  (result) => ({ summary: won('기회비용 포함 월 환산 비용', result.monthlyEquivalentWon), rows: [{ label: '비교 방법', value: '계약 조건을 각각 입력해 월 환산 비용을 비교하세요. 실제 월 청구액과 다릅니다.' }] }));
+
+const movingFields = [number('movingWon', '이사비', '원', '500000'), number('cleaningWon', '청소비', '원', '200000'), number('brokerageWon', '확인한 중개보수', '원', '300000'), number('otherWon', '기타 비용', '원', '100000')];
+const setupFields = [number('furnitureWon', '가구 비용', '원', '300000'), number('appliancesWon', '가전 비용', '원', '500000'), number('suppliesWon', '생활용품 비용', '원', '100000'), number('otherWon', '기타 비용', '원', '100000')];
+const holdingFields = [manualMoney('taxWon', '연간 세금 고지액'), number('insuranceWon', '연간 보험료', '원', '100000'), number('maintenanceWon', '연간 관리·수선비', '원', '800000'), number('interestWon', '연간 대출 이자', '원', '0'), number('otherWon', '연간 기타 비용', '원', '0')];
+const parseBudgetItems = (raw: Raw, fields: ReadonlyArray<CalculatorField>) => ({ items: fields.map(({ name, label }) => ({ name: label, amountWon: money(raw[name]) })) });
+const movingBudget = define('moving-budget', movingFields, (raw) => parseBudgetItems(raw, movingFields), calculateMovingBudget,
+  (result) => ({ summary: won('이사 예산 합계', result.totalWon) }));
+const setupBudget = define('one-person-setup-budget', setupFields, (raw) => parseBudgetItems(raw, setupFields), calculateSetupBudget,
+  (result) => ({ summary: won('자취 초기 준비비 합계', result.totalWon) }));
+const holdingCosts = define('holding-cost-checklist', holdingFields, (raw) => parseBudgetItems(raw, holdingFields), calculateHoldingCosts,
+  (result) => ({ summary: won('연간 보유비용 합계', result.totalWon), rows: [{ label: '계산 범위', value: '직접 입력한 연간 비용만 합산 · 지역별 세금 예측 아님' }] }));
+
+const housingAffordability = define('housing-affordability', [number('cashWon', '부대비용 제외 가용 현금', '원', '100000000'), number('netMonthlyIncomeWon', '월 순수입', '원', '3000000'), number('existingMonthlyDebtWon', '기존 월 원리금 상환액', '원', '200000'), manualRate('allowedDebtRatioPercent', '직접 정한 월 상환 허용비율'), manualRate('annualRatePercent', '직접 확인한 연 대출금리'), repaymentMonths, manualMoney('loanLimitWon', '직접 정한 대출한도')],
+  (raw) => ({ cashWon: money(raw.cashWon), netMonthlyIncomeWon: money(raw.netMonthlyIncomeWon), existingMonthlyDebtWon: money(raw.existingMonthlyDebtWon), allowedDebtRatioPercent: rate(raw.allowedDebtRatioPercent), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), loanLimitWon: money(raw.loanLimitWon) }), calculateHousingAffordability,
+  (result) => ({ summary: won('주택 구매 예산 예상액', result.housingBudgetWon), rows: [won('추가 월 상환 여력', result.availableMonthlyPaymentWon), won('상환 여력 기준 원금', result.affordablePrincipalWon), won('입력 한도 반영 대출액', result.financingWon), { label: '계산 가정', value: '수동 비율·금리·한도와 원리금균등 가정 · 대출 승인·규제 한도 예측 아님' }] }));
+
+const rentalYield = define('rental-yield', [number('annualRentWon', '연 임대료', '원', '12000000'), number('purchaseWon', '매입가', '원', '100000000'), number('annualCostsWon', '연 비용', '원', '2000000')],
+  (raw) => ({ annualRentWon: money(raw.annualRentWon), purchaseWon: money(raw.purchaseWon), annualCostsWon: money(raw.annualCostsWon) }), calculateRentalYield,
+  (result) => ({ summary: { label: '입력 기준 임대 수익률', value: formattedPercentValue(result.percent) }, rows: [{ label: '0% 표시 기준', value: '순임대료가 음수이거나 매입가가 0원이면 편의상 0% · 손실률 미표시' }] }));
+
+const vat = define('vat', [number('supplyWon', '계산 대상 금액', '원', '100000'), manualRate('ratePercent', '직접 확인한 부가세율'), select('includesVat', '입력 금액의 부가세 포함 여부', [{ value: 'no', label: '부가세 별도 공급가' }, { value: 'yes', label: '부가세 포함 합계' }], 'no')],
+  (raw) => ({ supplyWon: money(raw.supplyWon), ratePercent: rate(raw.ratePercent), includesVat: choice(raw.includesVat, ['no', 'yes']) === 'yes' }), calculateVat,
+  (result) => ({ summary: won('입력 세율 기준 부가세', result.vatWon), rows: [won('공급가', result.supplyWon), won('부가세 포함 합계', result.totalWon), { label: '계산 범위', value: '단순 예상액 · 과세 유형·매입세액 공제·납부세액 판단 제외' }] }));
+
+const profitFields = [number('salesWon', '매출', '원', '100000'), number('costWon', '원가', '원', '80000')];
+const parseProfit = (raw: Raw) => ({ salesWon: money(raw.salesWon), costWon: money(raw.costWon) });
+const margin = define('margin', profitFields, parseProfit, calculateMargin,
+  (result) => ({ summary: { label: '매출 기준 마진율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '매출 0원은 비율 계산이 불가능해 편의상 0%로 표시' }] }));
+const markup = define('markup', profitFields, parseProfit, calculateMarkup,
+  (result) => ({ summary: { label: '원가 기준 가산율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '원가 0원은 비율 계산이 불가능해 편의상 0%로 표시' }] }));
+
+const breakEven = define('break-even', [number('fixedCostWon', '기간 고정비', '원', '1000000'), number('unitPriceWon', '판매 단가', '원', '10000'), number('variableCostWon', '단위 변동비', '원', '6000')],
+  (raw) => ({ fixedCostWon: money(raw.fixedCostWon), unitPriceWon: money(raw.unitPriceWon), variableCostWon: money(raw.variableCostWon) }), calculateBreakEven,
+  (result) => result === null ? { summary: { label: '손익분기 수량', value: '도달 불가' }, rows: [{ label: '원인', value: '판매 단가가 단위 변동비 이하입니다.' }] } : { summary: { label: '손익분기 수량', value: `${formatNumber(result.units, 0)}개` }, rows: [won('손익분기 매출', result.salesWon), won('판매당 기여이익', result.contributionMarginWon)] });
+
+const commissionFields = [number('grossSalesWon', '총매출', '원', '1000000'), manualRate('platformFeePercent', '플랫폼 수수료율'), manualRate('paymentFeePercent', '결제 수수료율'), number('shippingWon', '배송비 합계', '원', '30000')];
+const parseCommission = (raw: Raw) => ({ grossSalesWon: money(raw.grossSalesWon), platformFeePercent: rate(raw.platformFeePercent), paymentFeePercent: rate(raw.paymentFeePercent), shippingWon: money(raw.shippingWon) });
+function presentSettlement(result: CommissionSettlementResult): DisplayResult {
+  return { summary: won('예상 정산액', result.settlementWon), rows: [won('플랫폼 수수료', result.platformFeeWon), won('결제 수수료', result.paymentFeeWon), won('배송비', result.shippingWon), won('차감 합계', result.totalDeductionsWon), { label: '계산 가정', value: '두 수수료 모두 총매출 기준 · 입력 요율만 적용 · 원가·세금 제외' }] };
+}
+const salesCommission = define('sales-commission', commissionFields, parseCommission, calculateCommissionSettlement, presentSettlement);
+const onlineSettlement = define('online-market-settlement', [...commissionFields, number('returnsWon', '반품액 합계', '원', '0')],
+  (raw) => ({ ...parseCommission(raw), returnsWon: money(raw.returnsWon) }), calculateOnlineMarketSettlement,
+  (result) => { const presented = presentSettlement(result); return { ...presented, rows: [...presented.rows!, won('반품 차감액', result.returnsWon), { label: '반품 처리', value: '반품 전 총매출에 수수료 적용 · 반품 수수료 환급 제외' }] }; });
+
+const freelancerNet = define('freelancer-net-income', [number('grossWon', '총수입', '원', '1000000'), number('expenseWon', '지출 경비', '원', '200000'), manualRate('withholdingRatePercent', '직접 확인한 원천징수율')],
+  (raw) => ({ grossWon: money(raw.grossWon), expenseWon: money(raw.expenseWon), withholdingRatePercent: rate(raw.withholdingRatePercent) }), calculateFreelancerNetIncome,
+  (result) => ({ summary: won('경비 차감 후 예상 순수입', result.netWon), rows: [won('총수입 기준 원천징수액', result.withholdingWon), { label: '계산 범위', value: '경비 차감 전 총수입에 입력 요율 적용 · 종합소득세 확정액 아님' }] }));
+
+const monthlyProfitFields = [number('salesWon', '월 매출', '원', '1000000'), number('fixedCostWon', '월 고정비', '원', '300000'), number('variableCostWon', '월 변동비 합계', '원', '200000')];
+const parseMonthlyProfit = (raw: Raw) => ({ salesWon: money(raw.salesWon), fixedCostWon: money(raw.fixedCostWon), variableCostWon: money(raw.variableCostWon) });
+const monthlyProfitLoss = define('monthly-profit-loss', monthlyProfitFields, parseMonthlyProfit, calculateMonthlyProfitLoss,
+  (result) => ({ summary: won('예상 월 손익', result.profitWon), rows: [won('월 비용 합계', result.totalCostsWon)] }));
+const businessFeasibility = define('business-feasibility', [number('initialInvestmentWon', '초기 투자금', '원', '1000000'), ...monthlyProfitFields],
+  (raw) => ({ ...parseMonthlyProfit(raw), initialInvestmentWon: money(raw.initialInvestmentWon) }), calculateBusinessFeasibility,
+  (result) => ({ summary: { label: '단순 투자금 회수 기간', value: result.paybackMonths === null ? '회수 불가' : `${formatNumber(result.paybackMonths).replace(/\.0+$/, '')}개월` }, rows: [won('예상 월 손익', result.profitWon), { label: '계산 가정', value: '월 이익 일정 · 전액 투자 회수 사용 · 할인율·추가 투자 제외 · 월 이익 0 이하일 때 회수 불가' }] }));
+const discountRate = define('discount-rate', [number('originalWon', '정가', '원', '100000', (raw) => { const value = money(raw); if (value.isZero()) throw new Error('정가는 0원보다 커야 합니다.'); return value; }), number('discountedWon', '할인가', '원', '80000')],
+  (raw) => ({ originalWon: money(raw.originalWon), discountedWon: money(raw.discountedWon) }), calculateDiscountRate,
+  (result) => ({ summary: { label: '정가 대비 할인율', value: formattedPercentValue(result.percent) }, rows: [won('할인 금액', result.discountWon)] }));
+
+export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer, savingsMaturity, depositInterest, affordability, dsr, dti, ltv, cardInstalment, manualExchange, acquisitionTax, brokerageFee, depositConversion, rentComparison, movingBudget, setupBudget, housingAffordability, rentalYield, holdingCosts, vat, margin, markup, breakEven, salesCommission, onlineSettlement, freelancerNet, monthlyProfitLoss, businessFeasibility, discountRate];

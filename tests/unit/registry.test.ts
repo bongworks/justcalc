@@ -7,6 +7,16 @@ import type { CalculatorCatalogEntry } from '@/lib/calculators/types';
 const categorySlugs = new Set(calculatorCategories.map(({ slug }) => slug));
 
 describe('calculator catalog', () => {
+  it('publishes the exact property and business routes', () => {
+    const expected = {
+      realestate: ['acquisition-tax', 'brokerage-fee', 'deposit-rent-conversion', 'rent-vs-deposit', 'moving-budget', 'one-person-setup-budget', 'housing-affordability', 'rental-yield', 'holding-cost-checklist'],
+      business: ['vat', 'margin', 'markup', 'break-even', 'sales-commission', 'online-market-settlement', 'freelancer-net-income', 'monthly-profit-loss', 'business-feasibility', 'discount-rate'],
+    } as const;
+    for (const category of ['realestate', 'business'] as const) {
+      expect(getCalculatorsByCategory(category).map(({ slug }) => slug).sort()).toEqual([...expected[category]].sort());
+      for (const slug of expected[category]) expect(calculatorBySlug.get(slug)?.route).toBe(`/${category}/${slug}/`);
+    }
+  });
   it('registers all eight finance planning calculators', () => {
     expect(getCalculatorsByCategory('finance').map(({ slug }) => slug)).toEqual(expect.arrayContaining([
       'savings-maturity', 'deposit-interest', 'loan-affordability', 'dsr', 'dti', 'ltv', 'card-instalment', 'manual-exchange-rate',

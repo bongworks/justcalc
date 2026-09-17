@@ -109,3 +109,31 @@ export function calculateOnlineMarketSettlement(input: OnlineMarketSettlementInp
     settlementWon: settlement.settlementWon.sub(returnsWon),
   };
 }
+
+export interface MonthlyProfitLossInput {
+  salesWon: Decimal;
+  fixedCostWon: Decimal;
+  variableCostWon: Decimal;
+}
+
+export function calculateMonthlyProfitLoss(input: MonthlyProfitLossInput) {
+  const totalCostsWon = input.fixedCostWon.add(input.variableCostWon);
+  return { totalCostsWon, profitWon: input.salesWon.sub(totalCostsWon) };
+}
+
+export function calculateBusinessFeasibility(input: MonthlyProfitLossInput & { initialInvestmentWon: Decimal }) {
+  const result = calculateMonthlyProfitLoss(input);
+  return { ...result, paybackMonths: result.profitWon.lte(0) ? null : input.initialInvestmentWon.div(result.profitWon) };
+}
+
+export function calculateFreelancerNetIncome(input: { grossWon: Decimal; expenseWon: Decimal; withholdingRatePercent: Decimal }) {
+  const withholdingWon = input.grossWon.mul(input.withholdingRatePercent).div(100);
+  return { withholdingWon, netWon: input.grossWon.sub(withholdingWon).sub(input.expenseWon) };
+}
+
+export function calculateDiscountRate(input: { originalWon: Decimal; discountedWon: Decimal }) {
+  if (input.originalWon.lte(0)) throw new Error('정가는 0원보다 커야 합니다.');
+  if (input.discountedWon.gt(input.originalWon)) throw new Error('할인가는 정가 이하여야 합니다.');
+  const discountWon = input.originalWon.sub(input.discountedWon);
+  return { discountWon, percent: discountWon.div(input.originalWon).mul(100) };
+}

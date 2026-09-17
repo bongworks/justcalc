@@ -13,6 +13,16 @@ const calculationInputs: Readonly<Record<string, Readonly<Record<string, string>
   'deposit-interest': { taxRatePercent: '10' },
   'loan-affordability': { allowedDebtRatioPercent: '20' },
   'manual-exchange-rate': { wonPerUnit: '1300' },
+  'acquisition-tax': { ratePercent: '2' },
+  'brokerage-fee': { ratePercent: '1', capWon: '300000' },
+  'deposit-rent-conversion': { conversionRatePercent: '4' },
+  'rent-vs-deposit': { conversionRatePercent: '4' },
+  'housing-affordability': { allowedDebtRatioPercent: '20', annualRatePercent: '0', loanLimitWon: '4000000' },
+  'holding-cost-checklist': { taxWon: '300000' },
+  'vat': { ratePercent: '10' },
+  'sales-commission': { platformFeePercent: '10', paymentFeePercent: '2' },
+  'online-market-settlement': { platformFeePercent: '10', paymentFeePercent: '2' },
+  'freelancer-net-income': { withholdingRatePercent: '3' },
 };
 
 test('all registered calculators calculate locally without persisting values', async ({ page }) => {
