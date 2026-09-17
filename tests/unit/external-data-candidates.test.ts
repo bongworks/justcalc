@@ -10,5 +10,8 @@ test('records the deferred external-data candidates for manual review', () => {
     'holiday-calendar',
     'time-zone',
   ]);
+  expect(externalDataCandidates.every(({ browserEligible }) => browserEligible === false)).toBe(true);
   expect(externalDataCandidates.every(({ reviewStatus }) => reviewStatus === 'not-reviewed')).toBe(true);
+  expect(externalDataCandidates.every(({ fallbackInput }) => fallbackInput.length > 0)).toBe(true);
+  expect(externalDataCandidates.every(({ lastReviewed }) => lastReviewed === null)).toBe(true);
 });
