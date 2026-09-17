@@ -95,6 +95,18 @@ test('mobile calculate button is reachable and tables do not overflow the page',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test('calculator workspace uses a responsive result-first grid', async ({ page, isMobile }) => {
+  await page.goto('/car/fuel-cost/');
+  const workspace = page.locator('.calculator-workspace-grid');
+  await expect(workspace).toHaveCount(1);
+  expect(await workspace.evaluate((element) => getComputedStyle(element).display)).toBe('grid');
+  if (isMobile) {
+    const form = await page.locator('.calculator-form').boundingBox();
+    const result = await page.locator('.result-panel').boundingBox();
+    expect(form && result && form.y < result.y).toBe(true);
+  }
+});
+
 test('keyboard alone reaches the form and completes a calculation', async ({ page }) => {
   await page.goto('/car/fuel-cost/');
   const distance = page.getByLabel('주행거리');
