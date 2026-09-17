@@ -65,19 +65,55 @@ describe('vehicle comparison calculations', () => {
     ).toEqual(d(68000));
   });
 
-  it('rejects zero-length comparison and depreciation periods', () => {
-    expect(() =>
-      calculateLeasePurchaseComparison({
-        purchaseMonthlyWon: d(800000),
-        leaseMonthlyWon: d(650000),
-        months: 0,
-        purchaseResidualWon: d(15000000),
-        leaseInitialWon: d(3000000),
-      }),
-    ).toThrow('기간은 0보다 큰 정수여야 합니다.');
+  it.each([
+    {
+      calculator: 'lease-purchase comparison',
+      calculate: (period: number) =>
+        calculateLeasePurchaseComparison({
+          purchaseMonthlyWon: d(800000),
+          leaseMonthlyWon: d(650000),
+          months: period,
+          purchaseResidualWon: d(15000000),
+          leaseInitialWon: d(3000000),
+        }),
+    },
+    {
+      calculator: 'rental-lease comparison',
+      calculate: (period: number) =>
+        calculateRentalLeaseComparison({
+          rentalMonthlyWon: d(700000),
+          leaseMonthlyWon: d(600000),
+          months: period,
+        }),
+    },
+    {
+      calculator: 'depreciation',
+      calculate: (period: number) =>
+        calculateDepreciation({
+          purchaseWon: d(30000000),
+          residualWon: d(18000000),
+          months: period,
+        }),
+    },
+    {
+      calculator: 'total ownership',
+      calculate: (period: number) =>
+        calculateTotalOwnership({
+          purchaseCostWon: d(30000000),
+          annualRunningWon: d(3000000),
+          years: period,
+          resaleWon: d(15000000),
+        }),
+    },
+  ])('rejects zero, negative, and fractional periods for $calculator', ({ calculate }) => {
+    for (const invalidPeriod of [0, -1, 1.5]) {
+      expect(() => calculate(invalidPeriod)).toThrow('기간은 0보다 큰 정수여야 합니다.');
+    }
+  });
 
-    expect(() =>
-      calculateDepreciation({ purchaseWon: d(30000000), residualWon: d(18000000), months: 0 }),
-    ).toThrow('기간은 0보다 큰 정수여야 합니다.');
+  it.each([-1, 1.5])('rejects invalid highway return-trip count %s', (returnTrips) => {
+    expect(() => calculateHighwayTollBudget({ oneWayTollWon: d(8500), returnTrips })).toThrow(
+      '왕복 횟수는 0 이상의 정수여야 합니다.',
+    );
   });
 });

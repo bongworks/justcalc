@@ -74,20 +74,40 @@ describe('body and exercise calculations', () => {
     expect(calculateWaterIntake({ weightKg: d(70), mlPerKg: d(35) }).litres).toEqual(d('2.45'));
   });
 
-  it('rejects impossible zero height, distance, and time inputs', () => {
-    expect(() => calculateBmi({ weightKg: d(70), heightCm: d(0) })).toThrow(
-      '키는 0보다 커야 합니다.',
-    );
-    expect(() => calculateTargetWeight({ heightCm: d(0), targetBmi: d(22) })).toThrow(
-      '키는 0보다 커야 합니다.',
-    );
-    expect(() => calculateRunningPace({ distanceKm: d(0), seconds: d(1500) })).toThrow(
+  it.each([
+    {
+      calculator: 'BMI',
+      calculate: (heightCm: Decimal) => calculateBmi({ weightKg: d(70), heightCm }),
+    },
+    {
+      calculator: 'BMR',
+      calculate: (heightCm: Decimal) =>
+        calculateBmr({ sex: 'male', weightKg: d(70), heightCm, age: 30 }),
+    },
+    {
+      calculator: 'target weight',
+      calculate: (heightCm: Decimal) => calculateTargetWeight({ heightCm, targetBmi: d(22) }),
+    },
+  ])('rejects zero and negative height for $calculator', ({ calculate }) => {
+    for (const invalidHeight of [d(0), d(-1)]) {
+      expect(() => calculate(invalidHeight)).toThrow('키는 0보다 커야 합니다.');
+    }
+  });
+
+  it.each([d(0), d(-1)])('rejects invalid running distance %s', (distanceKm) => {
+    expect(() => calculateRunningPace({ distanceKm, seconds: d(1500) })).toThrow(
       '거리는 0보다 커야 합니다.',
     );
-    expect(() => calculateRunningPace({ distanceKm: d(5), seconds: d(0) })).toThrow(
+  });
+
+  it.each([d(0), d(-1)])('rejects invalid running time %s', (seconds) => {
+    expect(() => calculateRunningPace({ distanceKm: d(5), seconds })).toThrow(
       '시간은 0보다 커야 합니다.',
     );
-    expect(() => calculateWalkingCalories({ distanceKm: d(0), kcalPerKm: d(55) })).toThrow(
+  });
+
+  it.each([d(0), d(-1)])('rejects invalid walking distance %s', (distanceKm) => {
+    expect(() => calculateWalkingCalories({ distanceKm, kcalPerKm: d(55) })).toThrow(
       '거리는 0보다 커야 합니다.',
     );
   });
