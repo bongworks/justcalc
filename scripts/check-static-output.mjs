@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { calculators } from '../content/calculators.ts';
+import { calculatorCategories } from '../lib/calculators/categories.ts';
 import { homePage, policyPages, productionOrigin } from '../lib/seo/site.ts';
 
 function robotsAllowCanonicalPaths(robots, paths) {
@@ -50,7 +51,7 @@ function robotsAllowCanonicalPaths(robots, paths) {
   return true;
 }
 
-export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false) {
+export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false, structuredDataRequired = true) {
   const errors = [];
   const doc = new JSDOM(html).window.document;
   const fail = (message) => errors.push(`${page.route}: ${message}`);
@@ -69,7 +70,7 @@ export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false
   const data = [...doc.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
     try { const item = JSON.parse(script.textContent); return Array.isArray(item) ? item : [item]; } catch { fail('invalid JSON-LD'); return []; }
   });
-  if (!data.some((item) => item['@type'] === 'WebPage' && item.url === canonical)) fail('matching WebPage JSON-LD is required');
+  if (structuredDataRequired && !data.some((item) => item['@type'] === 'WebPage' && item.url === canonical)) fail('matching WebPage JSON-LD is required');
   if (!gaEnabled && /ga-bootstrap|googletagmanager\.com\/gtag\/js/.test(html)) fail('GA must be absent without a measurement ID');
   if (!adSenseEnabled && /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/.test(html)) fail('AdSense must be absent without a publisher ID');
   return errors;
@@ -88,14 +89,15 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false,
   for (const artifact of ['api', 'server.js', '.next', 'node_modules']) {
     if (existsSync(resolve(directory, artifact))) errors.push(`server artifact is forbidden: ${artifact}`);
   }
-  const pages = [homePage, ...policyPages, ...calculators];
+  const pages = [homePage, ...policyPages, ...calculatorCategories, ...calculators];
+  const categoryRoutes = new Set(calculatorCategories.map(({ route }) => route));
   let maxJs = 0;
   let maxCss = 0;
   for (const page of pages) {
     const file = resolve(directory, `.${page.route}`, 'index.html');
     if (!existsSync(file)) { errors.push(`missing static artifact: ${page.route}index.html`); continue; }
     const html = readFileSync(file, 'utf8');
-    errors.push(...validateStaticPage(html, page, gaEnabled, adSenseEnabled));
+    errors.push(...validateStaticPage(html, page, gaEnabled, adSenseEnabled, !categoryRoutes.has(page.route)));
     const doc = new JSDOM(html).window.document;
     for (const [selector, attribute, budget] of [['script[src]', 'src', 300 * 1024], ['link[rel="stylesheet"]', 'href', 30 * 1024]]) {
       const assets = new Set([...doc.querySelectorAll(selector)].map((item) => item.getAttribute(attribute)).filter((url) => url.startsWith('/')));
@@ -115,16 +117,17 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false,
     const sitemap = new JSDOM(readFileSync(resolve(directory, 'sitemap.xml'), 'utf8'), { contentType: 'text/xml' });
     const urls = [...sitemap.window.document.querySelectorAll('loc')].map((node) => node.textContent);
     const expected = pages.map(({ route }) => productionOrigin + route);
-    if (urls.length !== 15 || new Set(urls).size !== 15 || expected.some((url) => !urls.includes(url))) errors.push('sitemap must contain exactly the 15 canonical routes');
+    if (urls.length !== expected.length || new Set(urls).size !== expected.length || expected.some((url) => !urls.includes(url))) errors.push('sitemap routes differ from registered public pages');
   }
   if (existsSync(resolve(directory, 'robots.txt'))) {
     const robots = readFileSync(resolve(directory, 'robots.txt'), 'utf8');
     if (!robots.includes(`Sitemap: ${productionOrigin}/sitemap.xml`) || !robotsAllowCanonicalPaths(robots, pages.map(({ route }) => route))) errors.push('robots must allow indexing and reference canonical sitemap');
   }
-  for (const category of ['car', 'finance', 'life']) {
-    const folder = resolve(directory, category);
-    const actual = existsSync(folder) ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => `/${category}/${entry.name}/`) : [];
-    if (actual.length !== calculators.filter((entry) => entry.category === category).length || actual.some((route) => !calculators.some((entry) => entry.route === route))) errors.push(`${category}: exported calculator routes differ from catalog`);
+  for (const { slug } of calculatorCategories) {
+    const folder = resolve(directory, slug);
+    const expected = calculators.filter((entry) => entry.category === slug).map(({ route }) => route);
+    const actual = existsSync(folder) ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => `/${slug}/${entry.name}/`) : [];
+    if (actual.length !== expected.length || actual.some((route) => !expected.includes(route))) errors.push(`${slug}: exported calculator routes differ from catalog`);
   }
   return { errors, maxJs, maxCss, pageCount: pages.length };
 }
@@ -135,5 +138,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const result = checkStaticOutput(resolve('out'), gaEnabled, adSenseEnabled);
   result.errors.forEach((error) => console.error(error));
   if (result.errors.length) process.exitCode = 1;
-  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (9 calculators, 5 policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
+  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (${calculators.length} calculators, ${calculatorCategories.length} category hubs, ${policyPages.length} policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
 }

@@ -147,7 +147,7 @@ describe('static output gate', () => {
     expect(errors).toContain('missing static artifact: /car/fuel-cost/index.html');
     expect(errors).toContain('missing static artifact: /privacy/index.html');
     expect(errors).toContain('missing static artifact: og-default.png');
-    expect(errors).toContain('sitemap must contain exactly the 15 canonical routes');
+    expect(errors).toContain('sitemap routes differ from registered public pages');
     expect(errors).toContain('robots must allow indexing and reference canonical sitemap');
     expect(errors).toContain('server artifact is forbidden: api');
   });

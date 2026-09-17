@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { calculators } from '../../content/calculators';
+import { calculatorCategories } from '../../lib/calculators/categories';
 
 const origin = 'https://calc.bongworks.co.kr';
 const policyRoutes = ['/about/', '/editorial-policy/', '/contact/', '/privacy/', '/terms/'];
@@ -22,13 +23,20 @@ test('every calculator has static canonical, social metadata and matching struct
   }
 });
 
-test('robots and sitemap include exactly the fifteen public URLs', async ({ request }) => {
+test('robots and sitemap include every registered public URL', async ({ request }) => {
   const robots = await request.get('/robots.txt');
   expect(await robots.text()).toContain(`Sitemap: ${origin}/sitemap.xml`);
   const sitemap = await request.get('/sitemap.xml');
   const xml = await sitemap.text();
   const urls = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]);
-  expect(urls.sort()).toEqual(['/', ...policyRoutes, ...calculators.map((entry) => entry.route)].map((path) => origin + path).sort());
+  expect(urls.sort()).toEqual(
+    [
+      '/',
+      ...policyRoutes,
+      ...calculatorCategories.map((entry) => entry.route),
+      ...calculators.map((entry) => entry.route),
+    ].map((path) => origin + path).sort(),
+  );
 });
 
 test('policy pages and footer explain local calculations, analytics and the launch gate', async ({ page }) => {

@@ -19,11 +19,15 @@ describe('calculator catalog', () => {
     expect(errors).toContain('purchase-cost: at least two examples are required');
     expect(errors).toContain('installment: invalid review date');
     expect(errors).toContain('loan-interest: limitations are required');
-    expect(validateCalculatorCatalog(fixture.slice(1))).toContain('expected exactly 9 calculators');
+    const standalone = structuredClone(calculatorCatalog.slice(0, 1));
+    standalone[0].relatedSlugs = [];
+    expect(validateCalculatorCatalog(standalone)).toEqual([]);
   });
-  it('registers the nine distinct P0 routes', () => {
-    expect(calculatorCatalog).toHaveLength(9);
-    expect(new Set(calculatorCatalog.map((calculator) => calculator.route)).size).toBe(9);
+  it('registers a non-empty catalog with distinct routes', () => {
+    expect(calculatorCatalog.length).toBeGreaterThan(0);
+    expect(new Set(calculatorCatalog.map((calculator) => calculator.route)).size).toBe(
+      calculatorCatalog.length,
+    );
   });
 
   it('uses a unique slug for every calculator', () => {

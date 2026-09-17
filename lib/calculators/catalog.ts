@@ -1,8 +1,10 @@
 import type { CalculatorCatalogEntry } from './types';
 
-export function validateCalculatorCatalog(definitions: ReadonlyArray<CalculatorCatalogEntry>): string[] {
+export function validateCalculatorCatalog(
+  definitions: ReadonlyArray<CalculatorCatalogEntry>,
+  categorySlugs?: ReadonlySet<string>,
+): string[] {
   const errors: string[] = [];
-  if (definitions.length !== 9) errors.push('expected exactly 9 calculators');
   for (const key of ['slug', 'route', 'title'] as const) {
     const seen = new Set<string>();
     for (const entry of definitions) {
@@ -14,7 +16,7 @@ export function validateCalculatorCatalog(definitions: ReadonlyArray<CalculatorC
   const slugs = new Set(definitions.map(({ slug }) => slug));
   for (const entry of definitions) {
     const fail = (message: string) => errors.push(`${entry.slug}: ${message}`);
-    if (!/^(car|finance|life)$/.test(entry.category) || !/^[a-z]+(?:-[a-z]+)*$/.test(entry.slug) || entry.route !== `/${entry.category}/${entry.slug}/`) fail('invalid canonical route');
+    if ((categorySlugs && !categorySlugs.has(entry.category)) || !/^[a-z]+(?:-[a-z]+)*$/.test(entry.slug) || entry.route !== `/${entry.category}/${entry.slug}/`) fail('invalid canonical route');
     if (!entry.description?.trim() || !entry.guide?.formula?.trim()) fail('description and formula are required');
     if (!entry.guide?.examples || entry.guide.examples.length < 2 || entry.guide.examples.some(({ title, text }) => !title.trim() || !text.trim())) fail('at least two examples are required');
     if (!entry.guide?.sources?.length || entry.guide.sources.some(({ label, href }) => !label.trim() || !/^https:\/\//.test(href))) fail('at least one source is required');
