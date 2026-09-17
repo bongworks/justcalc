@@ -75,6 +75,14 @@ export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false
   return errors;
 }
 
+export function gaEnabledForStaticOutput(measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, args = process.argv) {
+  return Boolean(measurementId) || args.includes('--ga-fixture');
+}
+
+export function adSenseEnabledForStaticOutput(clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID, args = process.argv) {
+  return Boolean(clientId) || args.includes('--adsense-fixture');
+}
+
 export function checkStaticOutput(directory = resolve('out'), gaEnabled = false, adSenseEnabled = false) {
   const errors = [];
   for (const artifact of ['api', 'server.js', '.next', 'node_modules']) {
@@ -122,8 +130,10 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false,
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const result = checkStaticOutput(resolve('out'), process.argv.includes('--ga-fixture'), process.argv.includes('--adsense-fixture'));
+  const gaEnabled = gaEnabledForStaticOutput();
+  const adSenseEnabled = adSenseEnabledForStaticOutput();
+  const result = checkStaticOutput(resolve('out'), gaEnabled, adSenseEnabled);
   result.errors.forEach((error) => console.error(error));
   if (result.errors.length) process.exitCode = 1;
-  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (9 calculators, 5 policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${process.argv.includes('--ga-fixture') ? 'fixture permitted' : 'absent'}; AdSense ${process.argv.includes('--adsense-fixture') ? 'fixture permitted' : 'absent'}.`);
+  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (9 calculators, 5 policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
 }
