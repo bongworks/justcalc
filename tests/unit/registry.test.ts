@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { calculatorCategories } from '@/lib/calculators/categories';
-import { calculatorCatalog, calculatorBySlug } from '@/lib/calculators/registry';
+import { calculatorCatalog, calculatorBySlug, getCalculatorsByCategory } from '@/lib/calculators/registry';
 import { validateCalculatorCatalog } from '@/lib/calculators/catalog';
 import type { CalculatorCatalogEntry } from '@/lib/calculators/types';
 
 const categorySlugs = new Set(calculatorCategories.map(({ slug }) => slug));
 
 describe('calculator catalog', () => {
+  it('registers all eight finance planning calculators', () => {
+    expect(getCalculatorsByCategory('finance').map(({ slug }) => slug)).toEqual(expect.arrayContaining([
+      'savings-maturity', 'deposit-interest', 'loan-affordability', 'dsr', 'dti', 'ltv', 'card-instalment', 'manual-exchange-rate',
+    ]));
+  });
   it('accepts the complete catalog and rejects incomplete release content', () => {
     expect(validateCalculatorCatalog(calculatorCatalog, categorySlugs)).toEqual([]);
     const fixture = structuredClone(calculatorCatalog);

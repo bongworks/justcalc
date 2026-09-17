@@ -11,6 +11,9 @@ import { calculateMaintenanceCost, type MaintenanceInput } from '@/lib/car/maint
 import { calculatePurchaseCost } from '@/lib/car/purchase';
 import { calculateRepaymentPlans, calculateSimpleInterest, type RepaymentRow, type SimpleInterestInput } from '@/lib/finance/loan';
 import { calculateCompoundSavings, type CompoundSavingsRow } from '@/lib/finance/compound';
+import { calculateSavingsMaturity, calculateDepositInterest, type SavingsInterestResult } from '@/lib/finance/savings';
+import { calculateLoanAffordability } from '@/lib/finance/affordability';
+import { calculateDsr, calculateDti, calculateLtv, convertCurrency } from '@/lib/finance/ratios';
 import { calculateMonthlyBudget } from '@/lib/life/budget';
 import { calculateHourlyMonthlyPay, calculateTakeHomePay, calculateWeeklyHolidayPay } from '@/lib/salary/pay';
 import { calculateAnnualLeaveAllowance, calculateParentalLeaveEstimate, calculateSeverancePay, calculateUnemploymentBenefitEstimate } from '@/lib/salary/benefits';
@@ -177,4 +180,43 @@ const freelancer = define('freelancer-withholding', [number('grossWon', '총 수
   (raw) => ({ grossWon: money(raw.grossWon), deductibleExpenseWon: money(raw.deductibleExpenseWon), withholdingRatePercent: rate(raw.withholdingRatePercent) }), calculateFreelancerWithholding,
   (result) => ({ summary: won('원천징수 후 수령액', result.netReceiptWon), rows: [won('경비 차감 후 대상 시나리오', result.taxableBaseWon), won('원천징수 예상액', result.withholdingWon), { label: '계산 가정', value: '입력 경비를 뺀 금액에 수동 입력 세율을 적용한 시나리오' }] }));
 
-export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer];
+const savingsPeriod = number('months', '저축 기간', '개월', '12', months, '1~1,200개월, 정수');
+const taxRate = manualRate('taxRatePercent', '이자 세율');
+function presentSavings(result: SavingsInterestResult, assumption: string): DisplayResult {
+  return { summary: won('세후 만기 예상액', result.afterTaxMaturityAmount), rows: [won('총 납입원금', result.totalPaid), won('세전 예상 이자', result.totalInterest), won('입력 세율 기준 세금', result.tax), won('세후 예상 이자', result.afterTaxInterest), won('세전 만기 예상액', result.maturityAmount), { label: '계산 가정', value: assumption }] };
+}
+
+const savingsMaturity = define('savings-maturity', [number('monthlyContribution', '매월 납입액', '원', '100000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, taxRate],
+  (raw) => ({ monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent) }), calculateSavingsMaturity,
+  (result) => presentSavings(result, '매월 말 납입 · 월 복리 · 세율 수동 입력'));
+
+const depositInterest = define('deposit-interest', [number('principal', '예치 원금', '원', '1000000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, taxRate],
+  (raw) => ({ principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent) }), calculateDepositInterest,
+  (result) => presentSavings(result, '단리 · 개월 수 기준 · 세율 수동 입력'));
+
+const affordability = define('loan-affordability', [number('netMonthlyIncomeWon', '월 순수입', '원', '3000000'), number('existingMonthlyDebtWon', '기존 월 원리금 상환액', '원', '200000'), manualRate('allowedDebtRatioPercent', '직접 정한 월 상환 허용비율'), annualRate, repaymentMonths],
+  (raw) => ({ netMonthlyIncomeWon: money(raw.netMonthlyIncomeWon), existingMonthlyDebtWon: money(raw.existingMonthlyDebtWon), allowedDebtRatioPercent: rate(raw.allowedDebtRatioPercent), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months) }), calculateLoanAffordability,
+  (result) => ({ summary: won('상환 여력 기준 추정 원금', result.affordablePrincipalWon), rows: [won('입력 비율 기준 월 상환 예산', result.maximumMonthlyDebtWon), won('추가 월 상환 여력', result.availableMonthlyPaymentWon), { label: '계산 가정', value: '수동 허용비율 · 고정금리 원리금균등 · 대출 승인·한도 예측 아님' }] }));
+
+const ratioRows: ReadonlyArray<ResultValue> = [{ label: '계산 범위', value: '입력값의 단순 비율이며 대출 승인·규제 충족을 판단하지 않습니다.' }, { label: '분모가 0원인 경우', value: '유효한 비율을 계산할 수 없어 편의상 0%로 표시합니다.' }];
+const dsr = define('dsr', [number('annualIncomeWon', '연 소득', '원', '60000000'), number('annualDebtPaymentsWon', '연간 총 원리금 상환액', '원', '12000000')],
+  (raw) => ({ annualIncomeWon: money(raw.annualIncomeWon), annualDebtPaymentsWon: money(raw.annualDebtPaymentsWon) }), calculateDsr,
+  (result) => ({ summary: { label: '입력 기준 DSR', value: formattedPercentValue(result.percent) }, rows: ratioRows }));
+
+const dti = define('dti', [number('annualIncomeWon', '연 소득', '원', '60000000'), number('annualHousingDebtPaymentsWon', '주택부채 연간 상환액', '원', '9000000')],
+  (raw) => ({ annualIncomeWon: money(raw.annualIncomeWon), annualHousingDebtPaymentsWon: money(raw.annualHousingDebtPaymentsWon) }), calculateDti,
+  (result) => ({ summary: { label: '주택부채 기준 단순 DTI 비율', value: formattedPercentValue(result.percent) }, rows: [...ratioRows, { label: '산정 항목', value: '주택부채 상환액만 반영하며 기타 대출 이자는 별도 산정하지 않습니다.' }] }));
+
+const ltv = define('ltv', [number('loanWon', '대출 금액', '원', '300000000'), number('propertyValueWon', '담보 가치', '원', '500000000')],
+  (raw) => ({ loanWon: money(raw.loanWon), propertyValueWon: money(raw.propertyValueWon) }), calculateLtv,
+  (result) => ({ summary: { label: '입력 기준 LTV', value: formattedPercentValue(result.percent) }, rows: ratioRows }));
+
+const cardInstalment = define('card-instalment', [number('principal', '할부 원금', '원', '1200000'), annualRate, repaymentMonths], loanInput,
+  (input) => calculateRepaymentPlans(input).equalPayment,
+  (plan) => { const result = presentPlan(plan, '원리금균등'); return { ...result, rows: [...result.rows!, { label: '계산 가정', value: '원리금균등 계획표이며 실제 카드사의 수수료·청구 방식과 다를 수 있습니다.' }] }; });
+
+const manualExchange = define('manual-exchange-rate', [number('amount', '외화 금액', '외화 단위', '100', nonnegative, '0 이상 · 소수 입력 가능'), number('wonPerUnit', '외화 1단위당 원화 환율', '원/외화 단위', '', positive, '수동 입력 · 실시간 환율이 아닙니다 · 0 초과 · 소수 입력 가능')],
+  (raw) => ({ amount: nonnegative(raw.amount), wonPerUnit: positive(raw.wonPerUnit) }), convertCurrency,
+  (result) => ({ summary: won('수동 환율 기준 원화 환산액', result.amountWon), rows: [{ label: '환율 기준', value: '직접 입력한 환율이며 실시간 환율이 아닙니다.' }, { label: '계산 범위', value: '외화 1단위당 원화 값 적용 · 환전·송금 수수료 제외' }] }));
+
+export const calculatorDefinitions: ReadonlyArray<RegisteredCalculator> = [maintenance, fuel, ev, purchase, installment, interest, comparison, compound, budget, takeHome, hourlyMonthly, weeklyHoliday, severance, annualLeave, unemployment, parentalLeave, negotiation, freelancer, savingsMaturity, depositInterest, affordability, dsr, dti, ltv, cardInstalment, manualExchange];

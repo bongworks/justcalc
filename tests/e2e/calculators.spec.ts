@@ -9,6 +9,10 @@ const calculationInputs: Readonly<Record<string, Readonly<Record<string, string>
   'unemployment-benefit': { dailyLowerLimitWon: '0', dailyUpperLimitWon: '10000000' },
   'parental-leave-benefit': { replacementRatePercent: '50', monthlyCapWon: '2000000' },
   'freelancer-withholding': { withholdingRatePercent: '3' },
+  'savings-maturity': { taxRatePercent: '10' },
+  'deposit-interest': { taxRatePercent: '10' },
+  'loan-affordability': { allowedDebtRatioPercent: '20' },
+  'manual-exchange-rate': { wonPerUnit: '1300' },
 };
 
 test('all registered calculators calculate locally without persisting values', async ({ page }) => {
@@ -32,6 +36,36 @@ test('all registered calculators calculate locally without persisting values', a
     page.off('request', record);
     expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
   }
+});
+
+test('finance card instalment shows the equal-payment schedule and uses changed inputs', async ({ page }) => {
+  await page.goto('/finance/card-instalment/');
+  await page.getByLabel('할부 원금').fill('1200000');
+  await page.getByLabel('연 이자율').fill('0');
+  await page.getByLabel('상환 기간').fill('12');
+  await page.getByRole('button', { name: '계산하기' }).click();
+  const schedule = page.getByRole('table', { name: '원리금균등 월별 상환 일정', exact: true });
+  await expect(schedule.locator('tbody tr')).toHaveCount(12);
+  await expect(schedule.locator('tbody tr').last().locator('td').last()).toHaveText('₩0');
+  await expect(page.locator('.result-panel')).toContainText('₩100,000');
+  await page.getByLabel('할부 원금').fill('2400000');
+  await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '계산하기' }).click();
+  await expect(page.locator('.result-panel')).toContainText('₩200,000');
+});
+
+test('finance manual exchange explains non-real-time values and clears stale output', async ({ page }) => {
+  await page.goto('/finance/manual-exchange-rate/');
+  await expect(page.locator('main')).toContainText('실시간 환율이 아닙니다');
+  await page.getByLabel('외화 금액').fill('100.5');
+  await page.getByLabel('외화 1단위당 원화 환율').fill('1300.5');
+  await page.getByRole('button', { name: '계산하기' }).click();
+  await expect(page.locator('.result-panel')).toContainText('₩130,700');
+  await expect(page.locator('.result-panel')).toContainText('실시간 환율이 아닙니다');
+  await page.getByLabel('외화 1단위당 원화 환율').fill('1000');
+  await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '계산하기' }).click();
+  await expect(page.locator('.result-panel')).toContainText('₩100,500');
 });
 
 test('fuel cost uses inputs and clears stale results on changes and reset', async ({ page }) => {

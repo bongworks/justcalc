@@ -1,6 +1,44 @@
 import { expect, it } from 'vitest';
 import { getCalculatorByCategoryAndSlug, getCalculatorBySlug } from '@/lib/calculators/registry';
 
+it.each([
+  ['savings-maturity', { monthlyContribution: '100000', annualRatePercent: '12', months: '2', taxRatePercent: '10' }, '₩200,900'],
+  ['deposit-interest', { principal: '1000000', annualRatePercent: '6', months: '12', taxRatePercent: '10' }, '₩1,054,000'],
+  ['loan-affordability', { netMonthlyIncomeWon: '3000000', existingMonthlyDebtWon: '200000', allowedDebtRatioPercent: '20', annualRatePercent: '0', months: '12' }, '₩4,800,000'],
+  ['dsr', { annualIncomeWon: '60000000', annualDebtPaymentsWon: '12000000' }, '20%'],
+  ['dti', { annualIncomeWon: '60000000', annualHousingDebtPaymentsWon: '9000000' }, '15%'],
+  ['ltv', { loanWon: '300000000', propertyValueWon: '500000000' }, '60%'],
+  ['manual-exchange-rate', { amount: '100.5', wonPerUnit: '1300.5' }, '₩130,700'],
+] satisfies Array<[string, Record<string, string>, string]>)('uses entered values in %s', (slug, input, value) => {
+  expect(getCalculatorBySlug(slug)!.evaluate(input).summary.value).toBe(value);
+});
+
+it('renders card instalment with the existing equal-payment monthly schedule', () => {
+  const result = getCalculatorBySlug('card-instalment')!.evaluate({ principal: '1200000', annualRatePercent: '0', months: '12' });
+  expect(result.summary.value).toBe('₩100,000');
+  expect(result.schedules).toHaveLength(1);
+  expect(result.schedules![0].rows).toHaveLength(12);
+  expect(result.schedules![0].rows.at(-1)!.balance.toString()).toBe('0');
+  expect(result.rows).toContainEqual({ label: '총이자', value: '₩0' });
+});
+
+it.each(['dsr', 'dti', 'ltv'])('explains the undefined zero-base convention for %s', (slug) => {
+  const definition = getCalculatorBySlug(slug)!;
+  const raw = Object.fromEntries(definition.fields.map(({ name }) => [name, '0']));
+  const result = definition.evaluate(raw);
+  expect(result.summary.value).toBe('0%');
+  expect(result.rows?.some(({ value }) => value.includes('0%'))).toBe(true);
+});
+
+it.each([
+  ['savings-maturity', { monthlyContribution: '100000', annualRatePercent: '3', months: '1.5', taxRatePercent: '10' }],
+  ['deposit-interest', { principal: '1000000', annualRatePercent: '3', months: '12', taxRatePercent: '101' }],
+  ['loan-affordability', { netMonthlyIncomeWon: '3000000', existingMonthlyDebtWon: '0', allowedDebtRatioPercent: '', annualRatePercent: '3', months: '12' }],
+  ['manual-exchange-rate', { amount: '100', wonPerUnit: '0' }],
+] satisfies Array<[string, Record<string, string>]>)('rejects invalid inputs for %s', (slug, raw) => {
+  expect(() => getCalculatorBySlug(slug)!.evaluate(raw)).toThrow();
+});
+
 it('distinguishes entered initial cash from additional cash required for a purchase', () => {
   const result = getCalculatorBySlug('purchase-cost')!.evaluate({
     vehiclePriceWon: '30000000',
@@ -42,5 +80,5 @@ it.each([
   const result = getCalculatorBySlug('salary-negotiation')!.evaluate({ currentAnnualWon, desiredAnnualWon });
 
   expect(result.rows).toContainEqual({ label: '연봉 인상률', value: expectedRate });
-  expect(result.rows.find((row) => row.label === '연봉 인상률')?.value).not.toMatch(/NaN|Infinity/);
+  expect(result.rows?.find((row) => row.label === '연봉 인상률')?.value).not.toMatch(/NaN|Infinity/);
 });
