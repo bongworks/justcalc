@@ -84,9 +84,6 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
 .copy-status { margin: 8px 0 0; font-size: 14px; }
 .copy-status:empty { display: none; }
 .result-disclaimer { margin: 24px 0 0; color: var(--muted); font-size: 14px; }
-.ad-slot { min-height: 120px; margin: 24px 0 0; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
-.ad-slot > p { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
-.ad-slot ins { display: block; }
 .repayment-table { min-width: 0; margin-bottom: 24px; }
 .table-scroll { max-width: 100%; overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 4px; }
 .table-scroll table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }

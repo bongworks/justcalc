@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-17-calculator-experience-adsense-readiness-design.md`
 
+> **2026-09-17 approved amendment:** Replace the manual post-result slot tasks below with one guarded automatic-ad loader. The implementation uses only `NEXT_PUBLIC_ADSENSE_CLIENT_ID`; it has no `AdSlot`, no result-slot ID, no `ins.adsbygoogle`, and no reserved ad space. The root layout loads the Google script exactly once on all routes only in a production build with a valid publisher ID. AdSense console settings control automatic placement and formats.
+
 ## Global Constraints
 
 - Do not change calculator formulas, input labels, validation, GA event payloads, canonical URLs, JSON-LD, or related-calculator registry data.

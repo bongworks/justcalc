@@ -2,7 +2,11 @@
 
 ## Goal
 
-Make every calculator feel like one focused flow: enter values, calculate, understand the result, then continue to trusted explanatory content. Prepare one clearly labelled manual AdSense placement without loading a Google script, reserving space, or changing privacy behaviour until valid configuration and operating prerequisites exist.
+Make every calculator feel like one focused flow: enter values, calculate, understand the result, then continue to trusted explanatory content. Prepare a guarded, site-wide AdSense automatic-ad loader without loading a Google script or changing privacy behaviour until a valid publisher ID and operating prerequisites exist.
+
+## Approved decision amendment: automatic ads
+
+The 2026-09-17 decision replaces the manual result-slot approach described in earlier draft sections. The final design uses no `ins` slot, no slot ID, and no reserved ad space. A single validated `NEXT_PUBLIC_ADSENSE_CLIENT_ID` makes the root layout load the standard Google loader on every page; AdSense automatic-ad placement and formats are configured in the AdSense console. A missing or invalid ID emits no script on any route.
 
 ## Context and constraints
 

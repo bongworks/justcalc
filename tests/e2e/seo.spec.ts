@@ -36,7 +36,7 @@ test('policy pages and footer explain local calculations, analytics and the laun
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('개인정보 처리방침');
   await expect(page.getByText(/계산 입력값과 결과는.*전송하거나 저장하지 않습니다/)).toBeVisible();
   await expect(page.getByText(/GA4.*기기.*쿠키/)).toBeVisible();
-  await expect(page.getByText(/현재 광고 스크립트는 로드하지 않습니다/)).toBeVisible();
+  await expect(page.getByText(/자동광고 스크립트는.*NEXT_PUBLIC_ADSENSE_CLIENT_ID.*프로덕션 빌드/)).toBeVisible();
   for (const path of policyRoutes) {
     await expect(page.locator(`footer a[href="${path}"]`)).toBeVisible();
     await page.goto(path);
@@ -46,7 +46,7 @@ test('policy pages and footer explain local calculations, analytics and the laun
   await expect(page.getByText(/공개 출시와 AdSense 신청은 보류/)).toBeVisible();
 });
 
-test('static release without a measurement ID never loads analytics', async ({ page }) => {
+test('static release without public IDs never loads analytics or automatic ads', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', origin + '/');
@@ -54,4 +54,5 @@ test('static release without a measurement ID never loads analytics', async ({ p
   expect(schemas.map((json) => JSON.parse(json)['@type']).sort()).toEqual(['WebPage', 'WebSite']);
   await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(0);
   await expect(page.locator('#ga-bootstrap')).toHaveCount(0);
+  await expect(page.locator('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]')).toHaveCount(0);
 });
