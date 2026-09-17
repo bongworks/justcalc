@@ -245,7 +245,7 @@ git commit -m "feat: add everyday date and education modules"
 - [ ] **Step 1: Write the failing end-to-end catalogue count and representative result tests**
 
 ~~~ts
-expect(calculatorCatalog).toHaveLength(59);
+expect(calculatorCatalog).toHaveLength(78);
 expect(getCalculatorsByCategory('health').map(({ slug }) => slug)).toContain('bmi');
 expect(getCalculatorsByCategory('education').map(({ slug }) => slug)).toContain('unit-conversion');
 ~~~
@@ -272,7 +272,7 @@ Add the slugs above with exact inputs/outputs from Tasks 3–4. Do not use manua
 
 Run: pnpm lint && pnpm check:catalog && pnpm check:privacy && pnpm test && NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build && pnpm check:static && pnpm test:e2e
 
-Expected: all 59 static calculator routes, eight category hubs, sitemap metadata, desktop/mobile interactions, and local-only calculation checks pass.
+Expected: all 78 static calculator routes, eight category hubs, sitemap metadata, desktop/mobile interactions, and local-only calculation checks pass.
 
 - [ ] **Step 5: Commit**
 

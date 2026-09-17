@@ -14,7 +14,7 @@ Expand 바로계산기 from nine automobile, finance, and household-budget tools
 
 ## Catalogue and Information Architecture
 
-The new catalogue contains the existing nine tools plus 50 new tools. Every tool has a stable two-segment Korean-search-friendly URL, a title, a unique description, a reviewed date, a calculation formula, two input examples, limitations, official or primary sources, and up to four related calculators.
+The new catalogue contains the existing nine tools plus 69 new tools (78 total). Every tool has a stable two-segment Korean-search-friendly URL, a title, a unique description, a reviewed date, a calculation formula, two input examples, limitations, official or primary sources, and up to four related calculators.
 
 | Category | Tools |
 | --- | --- |
