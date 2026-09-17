@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "python3 -m http.server 3000 --bind 127.0.0.1 --directory out",
+    "start": "python3 -m http.server 3000 --bind 0.0.0.0 --directory out",
     "check:catalog": "node --experimental-strip-types scripts/check-calculator-catalog.mjs",
     "check:privacy": "node scripts/check-no-input-leak.mjs",
     "check:static": "node --experimental-strip-types scripts/check-static-output.mjs",
