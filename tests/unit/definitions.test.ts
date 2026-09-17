@@ -15,3 +15,13 @@ it('distinguishes entered initial cash from additional cash required for a purch
   expect(result.rows).toContainEqual({ label: '구매 총비용', value: '₩32,000,000' });
   expect(result.rows).toContainEqual({ label: '자금 조달 차이 (추가 필요)', value: '₩2,000,000' });
 });
+
+it('keeps examples but does not expose the implementation maximum in visible hints', () => {
+  const maintenance = getCalculatorBySlug('maintenance-cost')!;
+  const annualDistance = maintenance.fields.find((field) => field.name === 'annualDistanceKm');
+  const insurance = maintenance.fields.find((field) => field.name === 'insuranceWon');
+
+  expect(annualDistance?.hint).toBe('예: 12,000');
+  expect(insurance?.hint).toBe('원 단위 정수로 입력 · 예: 800,000');
+  expect(JSON.stringify(maintenance.fields)).not.toContain('최대 1,000조');
+});

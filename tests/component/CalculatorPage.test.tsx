@@ -48,6 +48,14 @@ it('renders the guide and valid related routes around an independently resettabl
   expect(screen.getByRole('textbox')).toHaveValue('');
 });
 
+it('shows the calculator category and description before the interactive workspace', () => {
+  render(<CalculatorPage definition={definition}><Calculation /></CalculatorPage>);
+  const banner = screen.getByLabelText('자동차 계산기 안내');
+  expect(banner).toHaveTextContent('자동차');
+  expect(banner).toHaveTextContent(definition.description);
+  expect(banner.compareDocumentPosition(screen.getByLabelText('계산기 작업 영역')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
 it('deduplicates and caps related links at four known registry routes', () => {
   render(<RelatedCalculators slugs={['unknown', 'fuel-cost', 'fuel-cost', 'maintenance-cost', 'ev-charging-cost', 'purchase-cost', 'installment']} />);
   const links = within(screen.getByRole('navigation', { name: '관련 계산기' })).getAllByRole('link');

@@ -41,8 +41,9 @@ const months = (raw: string) => {
   if (!value.isInteger()) throw new Error('기간은 정수 개월로 입력해 주세요.');
   return value.toNumber();
 };
-function number(name: string, label: string, unit: string, example: string, parser: (raw: string) => unknown = money, hint = '0 이상, 최대 1,000조 · 금액은 정수로 입력'): CalculatorField {
-  return { name, label, unit, required: true, defaultValue: example, hint: `${hint} · 예: ${example}`, validate: (raw) => { try { parser(raw); } catch (error) { return error instanceof Error ? error.message : '입력값을 확인해 주세요.'; } } };
+function number(name: string, label: string, unit: string, example: string, parser: (raw: string) => unknown = money, hint = '원 단위 정수로 입력'): CalculatorField {
+  const formattedExample = example ? formatNumber(example, 0) : '';
+  return { name, label, unit, required: true, defaultValue: example, hint: formattedExample ? `${hint ? `${hint} · ` : ''}예: ${formattedExample}` : hint, validate: (raw) => { try { parser(raw); } catch (error) { return error instanceof Error ? error.message : '입력값을 확인해 주세요.'; } } };
 }
 function select(name: string, label: string, options: ReadonlyArray<{ value: string; label: string }>, defaultValue: string): CalculatorField {
   return { name, label, type: 'select', required: true, options, defaultValue };
@@ -62,17 +63,17 @@ function define<I, O>(slug: typeof calculators[number]['slug'], fields: Readonly
   return { ...entry, fields, parse, calculate, evaluate: (raw) => present(calculate(parse(raw))) };
 }
 
-const fuel = define('fuel-cost', [number('distanceKm', '주행거리', 'km', '420', nonnegative, '0 이상, 최대 1,000조 km'), number('efficiencyKmPerLitre', '연비', 'km/L', '14', positive, '0 초과, 최대 1,000조 km/L'), number('wonPerLitre', '유종 단가', '원/L', '1700')],
+const fuel = define('fuel-cost', [number('distanceKm', '주행거리', 'km', '420', nonnegative, ''), number('efficiencyKmPerLitre', '연비', 'km/L', '14', positive, ''), number('wonPerLitre', '유종 단가', '원/L', '1700')],
   (raw) => ({ distanceKm: nonnegative(raw.distanceKm), efficiencyKmPerLitre: positive(raw.efficiencyKmPerLitre), wonPerLitre: money(raw.wonPerLitre) }), calculateFuelCost,
   (result) => ({ summary: won('예상 유류비', result.totalWon), rows: [{ label: '예상 연료 사용량', value: `${formatNumber(result.litres)} L` }, won('1km당 유류비', result.wonPerKm)] }));
 
-const ev = define('ev-charging-cost', [number('distanceKm', '주행거리', 'km', '240', nonnegative, '0 이상, 최대 1,000조 km'), number('efficiencyKmPerKwh', '전비', 'km/kWh', '6', positive, '0 초과, 최대 1,000조 km/kWh'), number('wonPerKwh', '충전 단가', '원/kWh', '300')],
+const ev = define('ev-charging-cost', [number('distanceKm', '주행거리', 'km', '240', nonnegative, ''), number('efficiencyKmPerKwh', '전비', 'km/kWh', '6', positive, ''), number('wonPerKwh', '충전 단가', '원/kWh', '300')],
   (raw) => ({ distanceKm: nonnegative(raw.distanceKm), efficiencyKmPerKwh: positive(raw.efficiencyKmPerKwh), wonPerKwh: money(raw.wonPerKwh) }), calculateEvChargingCost,
   (result) => ({ summary: won('예상 충전비', result.totalWon), rows: [{ label: '예상 전력 사용량', value: `${formatNumber(result.kwh)} kWh` }, won('1km당 충전비', result.wonPerKm)] }));
 
 const maintenance = define('maintenance-cost', [
   select('powertrain', '동력원', [{ value: 'ice', label: '내연기관' }, { value: 'ev', label: '전기차' }], 'ice'),
-  number('annualDistanceKm', '연간 주행거리', 'km', '12000', positive, '0 초과, 최대 1,000조 km'),
+  number('annualDistanceKm', '연간 주행거리', 'km', '12000', positive, ''),
   ...fuel.fields.slice(1).map((field) => ({ ...field, visibleWhen: { field: 'powertrain', value: 'ice' } })),
   ...ev.fields.slice(1).map((field) => ({ ...field, visibleWhen: { field: 'powertrain', value: 'ev' } })),
   number('insuranceWon', '연간 보험료', '원', '800000'), number('taxWon', '연간 자동차세', '원', '300000'), number('maintenanceWon', '연간 정비·소모품 비용', '원', '400000'), number('otherWon', '연간 주차·통행료 및 기타 비용', '원', '600000'),
@@ -96,7 +97,7 @@ const installment = define('installment', [number('principal', '할부 원금', 
 const comparison = define('loan-repayment', [number('principal', '대출 원금', '원', '12000000'), annualRate, repaymentMonths], loanInput, calculateRepaymentPlans,
   (plans) => ({ summary: { label: '상환 방식 비교', value: '세 가지 상환 방식' }, rows: modes.flatMap(({ value, label }) => { const plan = plans[value]; return [won(`${label} 첫 달 납입액`, plan.rows[0].payment), won(`${label} 마지막 달 납입액`, plan.rows.at(-1)!.payment), won(`${label} 총이자`, plan.totalInterest), won(`${label} 총 납입액`, plan.totalPaid)]; }), schedules: modes.map(({ value, label }) => ({ title: label, rows: plans[value].rows })) }));
 
-const interest = define('loan-interest', [number('principal', '대출 원금', '원', '10000000'), annualRate, number('period', '이용 기간', '', '12', positive, '0 초과, 최대 1,000조'), select('periodUnit', '기간 단위', [{ value: 'days', label: '일' }, { value: 'months', label: '개월' }, { value: 'years', label: '년' }], 'months'), { ...select('daysInYear', '연 기준 일수', [{ value: '365', label: '365일' }, { value: '366', label: '366일' }], '365'), visibleWhen: { field: 'periodUnit', value: 'days' } }],
+const interest = define('loan-interest', [number('principal', '대출 원금', '원', '10000000'), annualRate, number('period', '이용 기간', '', '12', positive, '0 초과'), select('periodUnit', '기간 단위', [{ value: 'days', label: '일' }, { value: 'months', label: '개월' }, { value: 'years', label: '년' }], 'months'), { ...select('daysInYear', '연 기준 일수', [{ value: '365', label: '365일' }, { value: '366', label: '366일' }], '365'), visibleWhen: { field: 'periodUnit', value: 'days' } }],
   (raw): SimpleInterestInput => {
     const base = { principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), period: positive(raw.period) };
     const periodUnit = choice(raw.periodUnit, ['days', 'months', 'years']);
@@ -107,7 +108,7 @@ const compound = define('compound-interest', [number('initialPrincipal', '초기
   (raw) => { choice(raw.compounding, ['monthly']); return { initialPrincipal: money(raw.initialPrincipal), monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: raw.taxRatePercent?.trim() ? rate(raw.taxRatePercent) : undefined }; }, calculateCompoundSavings,
   (result) => ({ summary: won('세전 만기 예상액', result.maturityAmount), rows: [won('총 납입원금', result.totalPaid), won('세전 예상 이자', result.totalInterest), ...(result.afterTaxMaturityAmount === undefined ? [] : [won('세후 만기 예상액', result.afterTaxMaturityAmount), won('세후 예상 이자', result.afterTaxInterest!)]), { label: '계산 가정', value: '월 복리 · 매월 말 납입' }], savingsRows: result.rows }));
 
-const budget = define('monthly-budget', [number('incomeWon', '월 순수입', '원', '3000000'), number('housingWon', '주거비', '원', '600000'), number('carWon', '자동차비', '원', '300000', money, '자동차 유지비 계산 결과를 직접 입력 · 0 이상, 최대 1,000조'), number('foodWon', '식비', '원', '400000'), number('communicationsWon', '통신·구독비', '원', '100000'), number('healthWon', '보험·의료비', '원', '100000'), number('otherFixedWon', '기타 고정비', '원', '100000'), number('variableWon', '기타 변동비', '원', '200000'), number('savingsTargetWon', '목표 저축액', '원', '700000')],
+const budget = define('monthly-budget', [number('incomeWon', '월 순수입', '원', '3000000'), number('housingWon', '주거비', '원', '600000'), number('carWon', '자동차비', '원', '300000', money, '자동차 유지비 계산 결과를 직접 입력'), number('foodWon', '식비', '원', '400000'), number('communicationsWon', '통신·구독비', '원', '100000'), number('healthWon', '보험·의료비', '원', '100000'), number('otherFixedWon', '기타 고정비', '원', '100000'), number('variableWon', '기타 변동비', '원', '200000'), number('savingsTargetWon', '목표 저축액', '원', '700000')],
   (raw) => ({ incomeWon: money(raw.incomeWon), housingWon: money(raw.housingWon), carWon: money(raw.carWon), foodWon: money(raw.foodWon), communicationsWon: money(raw.communicationsWon), healthWon: money(raw.healthWon), otherFixedWon: money(raw.otherFixedWon), variableWon: money(raw.variableWon), savingsTargetWon: money(raw.savingsTargetWon) }), calculateMonthlyBudget,
   (result) => ({ summary: won('목표 저축액 반영 후 잔여 금액', result.remainingAfterSavingsWon), rows: [won('지출 총액', result.totalSpendingWon), { label: '수입 대비 지출 비율 (수입 0원일 때 0% 표시)', value: formatPercent(result.spendingRatio) }, ...result.categories.map((item) => ({ label: item.label, value: `${formatWon(item.costWon)} (${formatPercent(item.ratio)})` }))] }));
 

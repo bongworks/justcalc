@@ -73,7 +73,7 @@ test('category and slug mismatch returns 404', async ({ page }) => {
   expect((await page.goto('/life/fuel-cost/'))?.status()).toBe(404);
 });
 
-test('page sharing copies only the calculator base URL', async ({ page }) => {
+test('page sharing copies only the calculator base URL', async ({ page, baseURL }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => {
       (window as Window & { copiedText?: string }).copiedText = text;
@@ -82,7 +82,7 @@ test('page sharing copies only the calculator base URL', async ({ page }) => {
   await page.goto('/car/fuel-cost/?private=123456');
   await page.getByLabel('주행거리').fill('987654');
   await page.getByRole('button', { name: '페이지 링크 복사' }).click();
-  expect(await page.evaluate(() => (window as Window & { copiedText?: string }).copiedText)).toBe('http://127.0.0.1:3000/car/fuel-cost/');
+  expect(await page.evaluate(() => (window as Window & { copiedText?: string }).copiedText)).toBe(new URL('/car/fuel-cost/', baseURL).href);
 });
 
 test('mobile calculate button is reachable and tables do not overflow the page', async ({ page, isMobile }) => {
@@ -95,7 +95,7 @@ test('mobile calculate button is reachable and tables do not overflow the page',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test('calculator workspace uses a responsive result-first grid', async ({ page, isMobile }) => {
+test('calculator workspace uses a responsive form-first grid', async ({ page, isMobile }) => {
   await page.goto('/car/fuel-cost/');
   const workspace = page.locator('.calculator-workspace-grid');
   await expect(workspace).toHaveCount(1);
@@ -104,6 +104,32 @@ test('calculator workspace uses a responsive result-first grid', async ({ page, 
     const form = await page.locator('.calculator-form').boundingBox();
     const result = await page.locator('.result-panel').boundingBox();
     expect(form && result && form.y < result.y).toBe(true);
+  }
+});
+
+test('all calculators show an original category banner and maintain form-first mobile order', async ({ page, isMobile }) => {
+  for (const path of paths) {
+    await page.goto(path);
+    const banner = page.locator('.calculator-category-banner');
+    await expect(banner).toBeVisible();
+    const bannerBox = await banner.boundingBox();
+    const workspace = await page.locator('.calculator-workspace-grid').boundingBox();
+    const form = await page.locator('.calculator-form').boundingBox();
+    const result = await page.locator('.result-panel').boundingBox();
+    expect(bannerBox && workspace && form && result).toBeTruthy();
+    if (!bannerBox || !workspace || !form || !result) throw new Error(`Missing calculator layout on ${path}`);
+
+    expect(workspace.y - (bannerBox.y + bannerBox.height)).toBeGreaterThanOrEqual(16);
+    expect(bannerBox.width).toBeCloseTo(workspace.width, 0);
+    if (isMobile) {
+      expect(form.y + form.height).toBeLessThan(result.y);
+      expect(form.x).toBeCloseTo(result.x, 0);
+    } else {
+      expect(form.x + form.width).toBeLessThan(result.x);
+      expect(form.y).toBeCloseTo(result.y, 0);
+      await expect(page.locator('.result-panel')).toHaveCSS('position', 'sticky');
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
 
