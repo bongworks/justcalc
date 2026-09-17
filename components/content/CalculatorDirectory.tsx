@@ -45,8 +45,8 @@ export function CalculatorDirectory({
 
       <nav className="category-nav" aria-label="계산기 카테고리">
         <ul>
-          {categories.map((category) => (
-            <li key={category.slug}><a href={category.route}>{category.label}</a></li>
+          {visibleCategories.map((category) => (
+            <li key={category.slug}><a href={`#${category.slug}`}>{category.label}</a></li>
           ))}
         </ul>
       </nav>
@@ -58,9 +58,9 @@ export function CalculatorDirectory({
             const headingId = `${category.slug}-title`;
 
             return (
-              <section className="category-card" key={category.slug} aria-labelledby={headingId}>
+              <section className="category-card" id={category.slug} key={category.slug} aria-labelledby={headingId}>
                 <div className="category-card-heading">
-                  <h3 id={headingId}><a href={category.route}>{category.label} 계산기</a></h3>
+                  <h3 id={headingId}>{category.label} 계산기</h3>
                   <a className="category-hub-link" href={category.route} aria-label={`${category.label} 계산기 전체 보기`}>전체 보기</a>
                 </div>
                 <p>{category.description}</p>

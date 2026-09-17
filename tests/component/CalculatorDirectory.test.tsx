@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
 import { CalculatorDirectory } from '@/components/content/CalculatorDirectory';
@@ -31,12 +31,24 @@ test('filters calculator links locally by title or description', async () => {
   expect(store).not.toHaveBeenCalled();
 });
 
-test('links every registered category hub and shows a clear empty result', async () => {
+test('only shows category pills with a visible section while searching', async () => {
   const user = userEvent.setup();
   render(<CalculatorDirectory calculators={calculatorCatalog} categories={calculatorCategories} />);
 
-  expect(screen.getByRole('link', { name: /^급여·고용$/ })).toHaveAttribute('href', '/salary/');
-  expect(screen.getByRole('link', { name: /^교육·단위$/ })).toHaveAttribute('href', '/education/');
+  await user.type(screen.getByRole('searchbox', { name: '계산기 검색' }), '유류');
+
+  expect(screen.getByRole('link', { name: /^자동차$/ })).toHaveAttribute('href', '#car');
+  expect(screen.queryByRole('link', { name: /^교육·단위$/ })).toBeNull();
+});
+
+test('uses category pills for in-page navigation while retaining hub links as 전체 보기', async () => {
+  const user = userEvent.setup();
+  render(<CalculatorDirectory calculators={calculatorCatalog} categories={calculatorCategories} />);
+
+  expect(screen.getByRole('link', { name: /^급여·고용$/ })).toHaveAttribute('href', '#salary');
+  expect(screen.getByRole('link', { name: /^교육·단위$/ })).toHaveAttribute('href', '#education');
+  expect(within(screen.getByRole('heading', { name: '교육·단위 계산기' })).queryByRole('link')).toBeNull();
+  expect(screen.getByRole('link', { name: '교육·단위 계산기 전체 보기' })).toHaveAttribute('href', '/education/');
 
   await user.type(screen.getByRole('searchbox', { name: '계산기 검색' }), '찾을 수 없는 계산기');
 
