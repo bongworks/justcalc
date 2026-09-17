@@ -46,6 +46,18 @@ describe('calculateLoanAffordability', () => {
     expect(result.affordablePrincipalWon).toEqual(d(120000000));
   });
 
+  it('uses the zero-rate limit when a positive monthly rate is below calculation precision', () => {
+    const result = calculateLoanAffordability({
+      netMonthlyIncomeWon: d(3000000),
+      existingMonthlyDebtWon: d(200000),
+      allowedDebtRatioPercent: d(20),
+      annualRatePercent: d('1e-100'),
+      months: 12,
+    });
+
+    expect(result.affordablePrincipalWon).toEqual(d(4800000));
+  });
+
   it('inverts the equal-payment formula at a positive rate', () => {
     const result = calculateLoanAffordability({
       netMonthlyIncomeWon: d(2400000),

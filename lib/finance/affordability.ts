@@ -34,15 +34,18 @@ export function calculateLoanAffordability(
     0,
   );
   const monthlyRate = new AffordabilityDecimal(input.annualRatePercent).div(1200);
+  const onePlusMonthlyRate = new AffordabilityDecimal(1).add(monthlyRate);
   let affordablePrincipalWon: Decimal;
 
   if (availableMonthlyPaymentWon.isZero()) {
     affordablePrincipalWon = new AffordabilityDecimal(0);
-  } else if (monthlyRate.isZero()) {
+  } else if (monthlyRate.isZero() || onePlusMonthlyRate.eq(1)) {
+    // The annuity numerator becomes unrepresentable when 1 + rate rounds to 1.
+    // Its stable limit is the same payment-times-months result as a zero rate.
     affordablePrincipalWon = availableMonthlyPaymentWon.mul(input.months);
   } else {
     // Invert the same equal-payment annuity formula used by the loan calculator.
-    const growthFactor = new AffordabilityDecimal(1).add(monthlyRate).pow(input.months);
+    const growthFactor = onePlusMonthlyRate.pow(input.months);
     affordablePrincipalWon = availableMonthlyPaymentWon
       .mul(growthFactor.minus(1))
       .div(monthlyRate.mul(growthFactor));
