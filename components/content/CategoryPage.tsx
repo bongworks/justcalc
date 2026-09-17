@@ -19,7 +19,7 @@ export function CategoryPage({
         <p>{category.description}</p>
       </header>
       {calculators.length > 0 ? (
-        <nav aria-label={`${category.label} 계산기 목록`}>
+        <nav className="category-calculator-list" aria-label={`${category.label} 계산기 목록`}>
           <ul>
             {calculators.map((calculator) => (
               <li key={calculator.route}>

@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { calculatorCategories } from '@/lib/calculators/categories';
+import { calculatorCatalog } from '@/lib/calculators/registry';
 
 test('홈에서 바로계산기와 자동차 계산기 진입점을 보여준다', async ({ page }) => {
   await page.goto('/');
@@ -18,11 +20,43 @@ test('홈에서 바로계산기와 자동차 계산기 진입점을 보여준다
 test('home groups every calculator into visible category cards', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.locator('.home-calculator-card')).toHaveCount(9);
-  await expect(page.locator('.category-card')).toHaveCount(8);
-  await expect(page.locator('.category-card').filter({ has: page.getByRole('heading', { name: '자동차 계산기' }) }).locator('.home-calculator-card')).toHaveCount(5);
-  await expect(page.locator('.category-card').filter({ has: page.getByRole('heading', { name: '금융 계산기' }) }).locator('.home-calculator-card')).toHaveCount(3);
-  await expect(page.locator('.category-card').filter({ has: page.getByRole('heading', { name: '생활·날짜 계산기' }) }).locator('.home-calculator-card')).toHaveCount(1);
+  await expect(page.locator('.home-calculator-card')).toHaveCount(calculatorCatalog.length);
+  await expect(page.locator('.category-card')).toHaveCount(calculatorCategories.length);
+
+  for (const category of calculatorCategories) {
+    const expectedCount = calculatorCatalog.filter(
+      (calculator) => calculator.category === category.slug,
+    ).length;
+    const categoryCard = page.locator('.category-card').filter({
+      has: page.getByRole('heading', { name: `${category.label} 계산기`, exact: true }),
+    });
+
+    await expect(categoryCard.locator('.home-calculator-card')).toHaveCount(expectedCount);
+  }
+});
+
+test('category hub calculator links provide 44px touch targets on mobile', async ({ page, isMobile }) => {
+  test.skip(!isMobile);
+
+  for (const category of calculatorCategories) {
+    const expectedCount = calculatorCatalog.filter(
+      (calculator) => calculator.category === category.slug,
+    ).length;
+    if (expectedCount === 0) continue;
+
+    await page.goto(category.route);
+    const links = page.getByRole('navigation', {
+      name: `${category.label} 계산기 목록`,
+    }).getByRole('link');
+    await expect(links).toHaveCount(expectedCount);
+
+    for (const link of await links.all()) {
+      const box = await link.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  }
 });
 
 test('home search filters locally without requests, URL state, or storage', async ({ page }) => {
