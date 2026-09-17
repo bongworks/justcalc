@@ -1,6 +1,8 @@
 import Decimal from 'decimal.js';
 
 const StudyDecimal = Decimal.clone({ precision: 40 });
+const UINT32_RANGE = 0x1_0000_0000;
+const MAX_LOTTERY_NUMBER = 10_000;
 
 const LINEAR_UNITS = {
   mm: { category: 'length', toBase: '0.001' },
@@ -151,16 +153,21 @@ export function compareTimeZones(input: {
   return { localMinutes: destinationMinutes - dayOffset * 1440, dayOffset };
 }
 
-function browserCryptoRandom(): number {
+function secureRandomIndex(size: number): number {
   if (typeof window === 'undefined' || !globalThis.crypto?.getRandomValues) {
     throw new Error('무작위 선택은 브라우저의 암호학적 난수가 필요합니다.');
   }
-  const value = new Uint32Array(1);
-  globalThis.crypto.getRandomValues(value);
-  return value[0] / 0x1_0000_0000;
+
+  const acceptedRange = Math.floor(UINT32_RANGE / size) * size;
+  const values = new Uint32Array(1);
+  do {
+    globalThis.crypto.getRandomValues(values);
+  } while (values[0] >= acceptedRange);
+  return values[0] % size;
 }
 
-function randomIndex(size: number, random: RandomSource): number {
+function randomIndex(size: number, random?: RandomSource): number {
+  if (!random) return secureRandomIndex(size);
   const value = random();
   if (!Number.isFinite(value) || value < 0 || value >= 1) throw new Error('난수는 0 이상 1 미만이어야 합니다.');
   return Math.floor(value * size);
@@ -177,10 +184,9 @@ export function pickRandom<T>(input: {
     throw new Error('선택 개수는 1 이상이고 항목 수 이하인 정수여야 합니다.');
   }
 
-  const random = input.random ?? browserCryptoRandom;
   const choices = [...input.choices];
   for (let index = 0; index < count; index += 1) {
-    const selectedIndex = index + randomIndex(choices.length - index, random);
+    const selectedIndex = index + randomIndex(choices.length - index, input.random);
     [choices[index], choices[selectedIndex]] = [choices[selectedIndex], choices[index]];
   }
   return { picks: choices.slice(0, count) };
@@ -193,8 +199,24 @@ export function generateLotteryNumbers(input: {
 } = {}): { numbers: number[] } {
   const count = input.count ?? 6;
   const maximum = input.maximum ?? 45;
-  if (!Number.isSafeInteger(maximum) || maximum <= 0) throw new Error('최대 번호는 1 이상의 정수여야 합니다.');
-  const choices = Array.from({ length: maximum }, (_, index) => index + 1);
-  const { picks } = pickRandom({ choices, count, random: input.random });
-  return { numbers: picks.sort((left, right) => left - right) };
+  if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > MAX_LOTTERY_NUMBER) {
+    throw new Error('최대 번호는 1 이상 10,000 이하의 정수여야 합니다.');
+  }
+  if (!Number.isSafeInteger(count) || count <= 0 || count > maximum) {
+    throw new Error('선택 개수는 1 이상이고 최대 번호 이하인 정수여야 합니다.');
+  }
+
+  // A virtual partial Fisher-Yates draw stores only the positions touched by count selections.
+  const substitutions = new Map<number, number>();
+  const numbers: number[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const selectedIndex = index + randomIndex(maximum - index, input.random);
+    const selectedValue = substitutions.get(selectedIndex) ?? selectedIndex;
+    const currentValue = substitutions.get(index) ?? index;
+    if (selectedIndex !== index) substitutions.set(selectedIndex, currentValue);
+    substitutions.delete(index);
+    numbers.push(selectedValue + 1);
+  }
+
+  return { numbers: numbers.sort((left, right) => left - right) };
 }

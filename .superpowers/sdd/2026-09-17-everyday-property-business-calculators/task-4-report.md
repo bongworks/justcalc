@@ -56,3 +56,13 @@ Currency, rates, grades, and unit values use a local 40-digit `decimal.js` clone
 - `git diff --check`: passed.
 
 No dependency, catalogue entry, calculator definition, route, network API, or storage API was added.
+
+## Fix Round 1: bounded, unbiased random draws
+
+- Root cause: lottery generation allocated `maximum` entries before selection, so a safe integer could still trigger a huge or invalid array allocation. The browser path also converted a uint32 to a floating value and multiplied by the range, which is biased whenever the range does not divide 2^32 evenly.
+- Added an explicit calculator limit of **10,000** for the maximum lottery number. The boundary is accepted; `10,001` and `Number.MAX_SAFE_INTEGER` are rejected before entropy is read or memory proportional to `maximum` is allocated. A custom selection count must be a positive integer no greater than `maximum`.
+- Replaced the maximum-sized array with a virtual partial Fisher-Yates draw. It stores only the substitutions touched by the requested count, so generation uses O(count) additional memory rather than O(maximum).
+- The injectable `() => number` source remains available for deterministic tests. The default path reads `crypto.getRandomValues` only when a draw function is called and maps uint32 values with rejection sampling, eliminating modulo/range bias. Importing the module reads no entropy; an environment without browser secure crypto receives an explicit error.
+- RED: the focused study test had 3 expected failures: huge maximum reached `Invalid array length`, count greater than maximum produced only an indirect selection error, and uint32 `0xffffffff` mapped immediately to 45 instead of being rejected.
+- GREEN: `pnpm test tests/unit/education/study.test.ts` passed 18 tests, including cap boundaries, pre-draw validation, import/call entropy timing, missing-crypto handling, rejection sampling, and deterministic injection.
+- Final verification: the full suite passed 37 files and 303 tests; TypeScript, changed-file ESLint, `pnpm check:privacy` (64 application modules), and `git diff --check` all passed.

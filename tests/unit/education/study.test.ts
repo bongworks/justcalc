@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   calculateGpa,
   calculateGradeConversion,
@@ -83,6 +83,10 @@ describe('unit conversions', () => {
 });
 
 describe('local random tools', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('picks unique choices deterministically with an injected random source', () => {
     const values = [0.75, 0];
     let index = 0;
@@ -96,6 +100,52 @@ describe('local random tools', () => {
     expect(result.numbers).toEqual([1, 2, 3, 4, 5, 6]);
     expect(new Set(result.numbers).size).toBe(6);
     expect(result.numbers.every((number) => number >= 1 && number <= 45)).toBe(true);
+  });
+
+  it('rejects lottery maximums above the calculator cap before attempting allocation', () => {
+    const random = vi.fn(() => 0);
+    expect(generateLotteryNumbers({ count: 1, maximum: 10_000, random })).toEqual({ numbers: [1] });
+    expect(() => generateLotteryNumbers({ maximum: 10_001, random })).toThrow('10,000');
+    expect(() => generateLotteryNumbers({ maximum: Number.MAX_SAFE_INTEGER, random })).toThrow('10,000');
+    expect(random).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a custom lottery count larger than its maximum before drawing', () => {
+    const random = vi.fn(() => 0);
+    expect(() => generateLotteryNumbers({ count: 6, maximum: 5, random })).toThrow('최대 번호 이하');
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it('does not read secure entropy at import and reads it only when the default random path is called', async () => {
+    vi.resetModules();
+    const getRandomValues = vi.fn((values: Uint32Array) => {
+      values[0] = 0;
+      return values;
+    });
+    vi.stubGlobal('crypto', { getRandomValues });
+
+    const importedStudy = await import('@/lib/education/study');
+    expect(getRandomValues).not.toHaveBeenCalled();
+
+    expect(importedStudy.generateLotteryNumbers({ count: 1, maximum: 1 })).toEqual({ numbers: [1] });
+    expect(getRandomValues).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects biased uint32 values before mapping browser entropy into a draw range', () => {
+    const entropy = [0xffff_ffff, 0];
+    const getRandomValues = vi.fn((values: Uint32Array) => {
+      values[0] = entropy.shift() ?? 0;
+      return values;
+    });
+    vi.stubGlobal('crypto', { getRandomValues });
+
+    expect(generateLotteryNumbers({ count: 1, maximum: 45 })).toEqual({ numbers: [1] });
+    expect(getRandomValues).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws a clear error when the default path has no secure browser crypto', () => {
+    vi.stubGlobal('crypto', undefined);
+    expect(() => generateLotteryNumbers()).toThrow('브라우저의 암호학적 난수');
   });
 
   it('rejects invalid random output instead of producing out-of-range indexes', () => {
