@@ -47,8 +47,14 @@ export default function Home() {
               <h3 id={`${category.id}-title`}>{category.name}</h3>
               <p>{category.description}</p>
               <ul>
-                {calculatorCatalog.filter((calculator) => calculator.category === category.id).map(({ title, route }) => (
-                  <li key={route}><a href={route}>{title}</a></li>
+                {calculatorCatalog.filter((calculator) => calculator.category === category.id).map(({ title, description, route }) => (
+                  <li key={route}>
+                    <a className="home-calculator-card" href={route}>
+                      <h4>{title}</h4>
+                      <p>{description}</p>
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  </li>
                 ))}
               </ul>
             </section>
