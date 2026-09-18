@@ -28,8 +28,13 @@ restart_service() {
 
 switch_to_release() {
   local target_release="$1"
-  ln -sfn "$target_release" "$next_link"
-  mv -f "$next_link" "$current_link"
+  ln -s "$target_release" "$next_link"
+  "$python_bin" - "$next_link" "$current_link" <<'PY'
+import os
+import sys
+
+os.replace(sys.argv[1], sys.argv[2])
+PY
 }
 
 health_check() {
