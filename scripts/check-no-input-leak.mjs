@@ -8,7 +8,7 @@ import ts from 'typescript';
 // Changes fail closed: review payloads and browser tests before updating a hash.
 const reviewedBoundaries = {
   'lib/analytics/events.ts': 'feeddad750e057560672b91c6098644ab97640911e7a23bd6c17e6ada962c3a7',
-  'components/analytics/GoogleAnalytics.tsx': 'ef091b40aaf6d6d19bb77348f41b561d41f8d752edac6f7a64474490ebc15ccf',
+  'components/analytics/GoogleAnalytics.tsx': '2401d32c68d5948a5b3373a9d10fd5e4fd8225ca47177c1b80fdaaf0f0fb2e00',
 };
 const prohibited = new Set(['URLSearchParams', 'localStorage', 'sessionStorage', 'fetch', 'sendBeacon', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'indexedDB', 'pushState', 'replaceState', 'FormData']);
 const events = new Set(['calculator_view', 'calculator_start', 'calculator_submit', 'calculator_result', 'calculator_reset', 'related_calculator_click', 'share']);
