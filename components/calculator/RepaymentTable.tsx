@@ -9,7 +9,7 @@ export function RepaymentTable({ rows, caption = '월별 상환 일정' }: { row
   const id = useId();
   return (
     <div className="repayment-table">
-      <p className="field-hint" id={`${id}-hint`}>표가 화면보다 넓으면 좌우로 스크롤해 확인하세요.</p>
+      <p className="field-hint" id={`${id}-hint`}>표를 좌우로 밀어 나머지 열을 확인하세요.</p>
       <div className="table-scroll" role="region" aria-label={caption} aria-describedby={`${id}-hint`} tabIndex={0}>
         <table>
           <caption>{caption}</caption>

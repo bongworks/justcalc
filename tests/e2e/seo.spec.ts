@@ -54,6 +54,21 @@ test('policy pages and footer explain local calculations, analytics and the laun
   await expect(page.getByText(/공개 출시와 AdSense 신청은 보류/)).toBeVisible();
 });
 
+test('policy pages fit mobile screens and keep a short page footer at the viewport bottom', async ({ page, isMobile }) => {
+  if (isMobile) {
+    await page.goto('/privacy/');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    return;
+  }
+
+  await page.setViewportSize({ width: 1280, height: 1080 });
+  await page.goto('/about/');
+  const footer = await page.locator('footer').boundingBox();
+  expect(footer).not.toBeNull();
+  expect(footer!.y + footer!.height).toBeGreaterThanOrEqual(1080);
+  expect(footer!.y + footer!.height).toBeLessThanOrEqual(1081);
+});
+
 test('static release without public IDs never loads analytics or automatic ads', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
