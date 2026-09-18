@@ -58,3 +58,22 @@ it('queues initial tracker events before GA loads with query-free automatic page
   runInNewContext(script!, context);
   expect(win.dataLayer).toHaveLength(calls.length);
 });
+
+it.each([
+  ['/car/', '자동차 계산기'],
+  ['/finance/', '금융 계산기'],
+  ['/salary/', '급여·고용 계산기'],
+  ['/realestate/', '부동산 계산기'],
+  ['/business/', '세금·사업 계산기'],
+  ['/health/', '건강·운동 계산기'],
+  ['/life/', '생활·날짜 계산기'],
+  ['/education/', '교육·단위 계산기'],
+] as const)('reports %s as its own canonical category page', (pathname, pageTitle) => {
+  const html = renderToStaticMarkup(<GoogleAnalytics measurementId="G-TEST123456" siteOrigin="https://calc.bongworks.co.kr" />);
+  const script = html.match(/<script id="ga-bootstrap">([\s\S]*?)<\/script>/)?.[1];
+  const win = { location: { pathname, search: '' }, dataLayer: [] as unknown[] };
+  runInNewContext(script!, { window: win, document: { referrer: '' }, URL, URLSearchParams, Date });
+  const config = win.dataLayer.map((entry) => Array.from(entry as ArrayLike<unknown>)).find(([command]) => command === 'config')?.[2];
+
+  expect(config).toMatchObject({ page_path: pathname, page_location: `https://calc.bongworks.co.kr${pathname}`, page_title: pageTitle });
+});

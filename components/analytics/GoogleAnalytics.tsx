@@ -2,11 +2,13 @@
 
 import Script from 'next/script';
 import { calculators } from '@/content/calculators';
+import { calculatorCategories } from '@/lib/calculators/categories';
 import { homePage, policyPages } from '@/lib/seo/site';
 
 /** Query access is limited to four bounded campaign codes; page URLs stay canonical. */
 export function GoogleAnalytics({ measurementId, siteOrigin }: { measurementId: string; siteOrigin: string }) {
-  const pages = [homePage, ...policyPages, ...calculators].map(({ route, title }) => ({ route, title }));
+  const categoryPages = calculatorCategories.map(({ route, label }) => ({ route, title: `${label} 계산기` }));
+  const pages = [homePage, ...policyPages, ...categoryPages, ...calculators].map(({ route, title }) => ({ route, title }));
   const bootstrap = `(function(){
     if(window.__justcalcGaInitialized)return;
     window.__justcalcGaInitialized=true;
