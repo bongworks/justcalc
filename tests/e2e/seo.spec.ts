@@ -43,6 +43,7 @@ test('policy pages and footer provide public service, privacy and inquiry inform
   await page.goto('/privacy/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('개인정보 처리방침');
   await expect(page.getByText(/계산 입력값과 결과는.*전송하거나 저장하지 않습니다/)).toBeVisible();
+  await expect(page.getByText(/페이지 제목.*유입 출처.*캠페인 코드/)).toBeVisible();
   await expect(page.getByText(/문의 메일로 제공한 정보는 문의 확인과 답변을 위해서만 사용합니다/)).toBeVisible();
   for (const path of policyRoutes) {
     await expect(page.locator(`footer a[href="${path}"]`)).toBeVisible();
@@ -54,6 +55,16 @@ test('policy pages and footer provide public service, privacy and inquiry inform
   await expect(page.getByText(/기능 제안, 오류 제보, 서비스 이용 문의/)).toBeVisible();
   await expect(page.locator('body')).not.toContainText('공개 출시와 AdSense 신청은 보류');
   await expect(page.locator('body')).not.toContainText('NEXT_PUBLIC_');
+});
+
+test('policy pages do not expose development or release instructions', async ({ page }) => {
+  const internalCopy = ['공개 운영 준비 중', '공개 출시와 AdSense 신청은 보류', 'NEXT_PUBLIC_', '프로덕션 정책 페이지를 배포하지 않습니다'];
+
+  for (const path of policyRoutes) {
+    await page.goto(path);
+    const body = page.locator('body');
+    for (const copy of internalCopy) await expect(body).not.toContainText(copy);
+  }
 });
 
 test('policy pages fit mobile screens and keep a short page footer at the viewport bottom', async ({ page, isMobile }) => {
