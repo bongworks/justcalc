@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const productionOrigin = 'https://calc.bongworks.co.kr';
 export const siteName = '바로계산기';
-export const homePage = { route: '/', title: '바로계산기 | 생활비, 자동차, 대출 비용 계산기', description: '차를 사고 유지하고, 돈을 빌리고 모을 때 드는 실제 비용을 한눈에 계산합니다.' };
+export const homePage = { route: '/', title: '바로계산기 | 차량, 금융, 생활, 건강 계산기', description: '차량 비용부터 생활비, 급여, 세금, 건강까지 필요한 계산을 한곳에서.' };
 export const policyPages = [
   { route: '/about/', title: '서비스 소개', description: '바로계산기의 목적과 제공하는 계산 범위를 소개합니다.' },
   { route: '/editorial-policy/', title: '편집 및 검토 정책', description: '계산식, 자료 출처, 검토일과 오류 정정 기준을 안내합니다.' },

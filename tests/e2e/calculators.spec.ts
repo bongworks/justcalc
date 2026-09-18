@@ -189,6 +189,22 @@ test('mobile calculate button is reachable and tables do not overflow the page',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test('mobile repayment tables keep the installment number visible while scrolling later columns', async ({ page, isMobile }) => {
+  test.skip(!isMobile);
+  await page.goto('/car/installment/');
+  await page.getByRole('button', { name: '계산하기' }).click();
+
+  const tableRegion = page.getByRole('region', { name: /월별 상환 일정/ });
+  const firstInstallment = tableRegion.locator('tbody th').first();
+  const initialBox = await firstInstallment.boundingBox();
+  await tableRegion.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+  const scrolledBox = await firstInstallment.boundingBox();
+
+  expect(initialBox).not.toBeNull();
+  expect(scrolledBox).not.toBeNull();
+  expect(scrolledBox!.x).toBeCloseTo(initialBox!.x, 0);
+});
+
 test('calculator workspace uses a responsive form-first grid', async ({ page, isMobile }) => {
   await page.goto('/car/fuel-cost/');
   const workspace = page.locator('.calculator-workspace-grid');

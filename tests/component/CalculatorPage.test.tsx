@@ -68,7 +68,7 @@ it('labels the focusable internal repayment table scroll region and column heade
   render(<RepaymentTable rows={[{ month: 1, payment: '100000', principal: '90000', interest: '10000', balance: '910000' }]} />);
   const region = screen.getByRole('region', { name: '월별 상환 일정' });
   expect(region).toHaveAttribute('tabindex', '0');
-  expect(region).toHaveAccessibleDescription('표가 화면보다 넓으면 좌우로 스크롤해 확인하세요.');
+  expect(region).toHaveAccessibleDescription('표를 좌우로 밀어 나머지 열을 확인하세요.');
   expect(within(region).getByRole('table')).toHaveAccessibleName('월별 상환 일정');
   expect(within(region).getAllByRole('columnheader')).toHaveLength(5);
   expect(within(region).getByRole('rowheader')).toHaveTextContent('1');

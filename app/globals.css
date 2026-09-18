@@ -2,8 +2,9 @@
 
 :root { --canvas: #f5f7fb; --surface: #fff; --ink: #202d43; --muted: #59677c; --accent: #245ad7; --line: #dce3ee; --error: #b42318; --navy: #182d51; --blue-tint: #edf3ff; --muted-blue: #43618f; --card-shadow: 0 4px 20px rgb(24 45 81 / .04); }
 * { box-sizing: border-box; }
-html { background: var(--canvas); }
-body { min-width: 320px; margin: 0; color: var(--ink); background: var(--canvas); font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 16px; line-height: 1.6; }
+html { min-height: 100%; background: var(--canvas); }
+body { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: var(--canvas); font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 16px; line-height: 1.6; }
+main { min-width: 0; }
 a { color: var(--accent); }
 :where(a, button, input, select, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 .skip-link { position: absolute; z-index: 1; top: 0; left: 1rem; padding: .75rem 1rem; color: #fff; background: var(--ink); transform: translateY(-120%); }
@@ -19,7 +20,7 @@ a { color: var(--accent); }
 .policy-page h1 { max-width: none; font-size: clamp(28px, 4vw, 40px); }
 .policy-page h2 { margin-top: 32px; }
 .policy-page ul { padding-left: 24px; list-style: disc; }
-.policy-page a { overflow-wrap: anywhere; }
+.policy-page :where(p, li, a, code) { overflow-wrap: anywhere; word-break: break-word; }
 .page-shell { width: min(100% - 2.5rem, 70rem); margin: 0 auto; padding: clamp(2rem, 5vw, 3.5rem) 0 4rem; }
 .hero { max-width: 50rem; margin-bottom: 2.75rem; }
 .eyebrow { margin: 0 0 .875rem; color: var(--accent); font-size: 14px; font-weight: 700; }
@@ -119,11 +120,13 @@ h2 { color: var(--navy); font-size: clamp(1.25rem, 2.5vw, 1.5rem); font-weight: 
 .copy-status:empty { display: none; }
 .result-disclaimer { margin: 20px 0 0; color: var(--muted-blue); font-size: 13px; line-height: 1.7; }
 .repayment-table { min-width: 0; margin-bottom: 24px; }
-.table-scroll { max-width: 100%; overflow-x: auto; margin-top: 12px; border: 1px solid #c9d9f5; border-radius: 8px; background: var(--surface); }
+.table-scroll { max-width: 100%; overflow-x: auto; margin-top: 12px; border: 1px solid #c9d9f5; border-radius: 8px; background: linear-gradient(90deg, var(--surface) calc(100% - 1.5rem), rgb(201 217 245 / .9)); }
 .table-scroll table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 .table-scroll caption { padding: 12px; text-align: left; font-weight: 700; }
 .table-scroll th, .table-scroll td { padding: 12px 16px; text-align: right; white-space: nowrap; border-top: 1px solid var(--line); }
 .table-scroll thead { color: var(--navy); background: var(--blue-tint); }
+.repayment-table .table-scroll :is(thead th:first-child, tbody th) { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+.repayment-table .table-scroll thead th:first-child { z-index: 2; background: var(--blue-tint); }
 .calculator-guide, .related-calculators { margin-top: 32px; padding: clamp(20px, 3vw, 32px); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .calculator-guide { color: var(--muted); line-height: 1.8; }
 .calculator-guide h2, .related-calculators h2 { margin-bottom: 20px; }

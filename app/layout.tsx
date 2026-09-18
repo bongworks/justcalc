@@ -9,8 +9,8 @@ import { getSiteOrigin, getVerification } from '@/lib/seo/site';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '바로계산기 | 생활비, 자동차, 대출 비용 계산기',
-  description: '차를 사고 유지하고, 돈을 빌리고 모을 때 드는 실제 비용을 한눈에 계산합니다.',
+  title: '바로계산기 | 차량, 금융, 생활, 건강 계산기',
+  description: '차량 비용부터 생활비, 급여, 세금, 건강까지 필요한 계산을 한곳에서.',
   icons: { icon: '/favicon.svg' },
   metadataBase: new URL(getSiteOrigin()),
   verification: getVerification(),
