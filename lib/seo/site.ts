@@ -6,7 +6,7 @@ export const homePage = { route: '/', title: '바로계산기 | 차량, 금융, 
 export const policyPages = [
   { route: '/about/', title: '서비스 소개', description: '바로계산기의 목적과 제공하는 계산 범위를 소개합니다.' },
   { route: '/editorial-policy/', title: '편집 및 검토 정책', description: '계산식, 자료 출처, 검토일과 오류 정정 기준을 안내합니다.' },
-  { route: '/contact/', title: '운영 및 문의 안내', description: '운영자 정보와 문의 창구의 공개 준비 상태를 안내합니다.' },
+  { route: '/contact/', title: '운영 및 문의 안내', description: '서비스 이용, 기능 제안과 오류 제보를 위한 문의 방법을 안내합니다.' },
   { route: '/privacy/', title: '개인정보 처리방침', description: '브라우저 내 계산과 방문 분석의 정보 처리 범위를 안내합니다.' },
   { route: '/terms/', title: '이용약관', description: '참고용 계산 결과의 이용 조건과 한계를 안내합니다.' },
 ] as const;
