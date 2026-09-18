@@ -7,8 +7,8 @@
 - [ ] Node 24 / pnpm 10.18.2에서 `pnpm install --frozen-lockfile`을 실행한다.
 - [ ] `pnpm lint`, `pnpm check:catalog`, `pnpm check:privacy`, `pnpm test`가 모두 통과한다.
 - [ ] `NEXT_PUBLIC_GA_MEASUREMENT_ID='' pnpm build` 후 `pnpm check:static`이 통과한다.
-- [ ] `out/`에는 계산기 9개, 정책 5개, 홈 HTML, 404, robots.txt, sitemap.xml, favicon/OG 및 참조된 JS/CSS가 있다. API·서버 실행 파일은 없다.
-- [ ] 15개 주소의 canonical·WebPage JSON-LD·사이트맵은 `https://calc.bongworks.co.kr`과 일치하며 입력 쿼리·noindex·중복 경로가 없다. `none` 및 Googlebot/Bingbot/Naverbot/Yeti별 noindex도 없어야 한다. robots의 봇 그룹·부분 경로·와일드카드·Allow 우선순위를 적용했을 때 모든 공개 경로를 크롤링할 수 있어야 한다.
+- [ ] `out/`에는 홈 1개, 카테고리 허브 8개, 계산기 78개, 정책 5개로 총 92개의 canonical HTML 페이지와 404, robots.txt, sitemap.xml, favicon/OG 및 참조된 JS/CSS가 있다. API·서버 실행 파일은 없다.
+- [ ] 92개 canonical HTML 페이지의 canonical·WebPage JSON-LD·사이트맵은 `https://calc.bongworks.co.kr`과 일치하며 입력 쿼리·noindex·중복 경로가 없다. `none` 및 Googlebot/Bingbot/Naverbot/Yeti별 noindex도 없어야 한다. robots의 봇 그룹·부분 경로·와일드카드·Allow 우선순위를 적용했을 때 모든 공개 경로를 크롤링할 수 있어야 한다.
 - [ ] 계산기마다 독립적인 계산표/신뢰 가능한 예시와 결과·단위·반올림·한계를 사람이 교차 검토하고 출처 및 검토일을 승인한다. 자동 테스트만으로 공식 검토를 대체하지 않는다.
 
 `check:privacy`는 앱·컴포넌트·계산기/분석 도우미 전체를 검사한다. URL 쿼리/해시·저장소·네트워크 수집 경로와 직접 GA 호출을 거부하며 이벤트 옵션은 허용된 상수만 받는다. `history.pushState/replaceState`, 브래킷 형태의 location 접근/쓰기, FormData와 네이티브 폼 submit/requestSubmit, JSX form의 method/action 또는 submit 핸들러 누락도 탐지한다. 기존 로컬 폼의 hydration 전 비활성화와 preventDefault 동작은 컴포넌트/E2E 테스트로 검증한다. 정적 앵커와 명시적인 `window.location.origin`/`.pathname` 읽기만 허용하며 location 객체 자체 취득·별칭 생성과 동적 브라우저 전역 접근은 거부한다. 두 분석 경계 파일은 검토된 SHA-256과 일치해야 한다. 변경 시 단순히 해시만 바꾸지 말고 payload 허용 목록 및 아래 합성 브라우저 검증을 먼저 검토한다. 정적 검사는 일반적인 우회 경로를 무한히 증명하는 보안 도구가 아니므로 코드 리뷰와 런타임 확인도 필요하다.
@@ -18,7 +18,7 @@
 브라우저 전역 `window`/`globalThis`/`self` 객체 자체를 변수·대입·타입 단언 등으로 취득하는 것도 거부한다. 직접 멤버 접근과 `typeof` 확인만 허용한다. 기존 GA 이벤트 경계의 typed window 별칭은 앞서 명시한 SHA-256 검토 경계에서만 허용되며, 그 파일 내용이 바뀌면 검사는 실패한다.
 
 - [ ] 현재 `out/`을 제공하는 서버에서 `pnpm test:e2e`가 데스크톱 및 375px 모바일 Chromium으로 통과한다. 개발 서버 재사용은 허용하지 않는다.
-- [ ] 9개 계산기의 입력→계산→결과, 오류, 초기화, 링크/결과 복사와 관련 계산기 이동을 확인한다. 계산 중 입력·결과가 네트워크·URL·브라우저 저장소에 들어가지 않는지 확인한다.
+- [ ] 78개 계산기의 입력→계산→결과, 오류, 초기화, 링크/결과 복사와 관련 계산기 이동을 확인한다. 계산 중 입력·결과가 네트워크·URL·브라우저 저장소에 들어가지 않는지 확인한다.
 - [ ] 키보드만으로 입력·계산·결과·초기화·복사를 수행한다. 포커스 표시, 라벨, 필드 오류 연결, 결과 알림을 확인한다.
 - [ ] 375 / 768 / 1024 / 1440px에서 가로 넘침과 표 스크롤, 44px 터치 영역, 본문 16px, 대비 4.5:1을 확인한다.
 - [ ] 정적 산출물에서 Lighthouse 모바일·데스크톱 성능/접근성/SEO 결과와 브라우저 버전·측정 조건을 기록하고 심각한 오류를 해결한다.
