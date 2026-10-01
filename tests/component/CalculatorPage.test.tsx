@@ -48,12 +48,11 @@ it('renders the guide and valid related routes around an independently resettabl
   expect(screen.getByRole('textbox')).toHaveValue('');
 });
 
-it('shows the calculator category and description before the interactive workspace', () => {
+it('keeps the description once and the formula after the interactive workspace', () => {
   render(<CalculatorPage definition={definition}><Calculation /></CalculatorPage>);
-  const banner = screen.getByLabelText('자동차 계산기 안내');
-  expect(banner).toHaveTextContent('자동차');
-  expect(banner).toHaveTextContent(definition.description);
-  expect(banner.compareDocumentPosition(screen.getByLabelText('계산기 작업 영역')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getAllByText(definition.description)).toHaveLength(1);
+  const guide = screen.getByLabelText('계산 방법과 기준');
+  expect(screen.getByLabelText('계산기 작업 영역').compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 it('deduplicates and caps related links at four known registry routes', () => {

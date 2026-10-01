@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { decisionGuides, guideIndexPage } from '../../content/decision-guides';
 
 test.skip(process.env.E2E_GA_PRODUCTION !== '1', 'Requires a production build with the synthetic GA fixture ID.');
 
@@ -14,6 +15,16 @@ test.beforeEach(async ({ page, request }) => {
     }
     return route.abort();
   });
+});
+
+test('guide visits use their own canonical page attribution and exclude input-like URL data', async ({ page }) => {
+  for (const guide of [guideIndexPage, ...decisionGuides]) {
+    await page.goto(guide.route + '?income=987654321&email=private@example.com#secret');
+    await expect(page.locator('script[src*="googletagmanager.com/gtag/js"]')).toHaveCount(1);
+    const commands = await page.evaluate(() => ((window as Window & { dataLayer?: ArrayLike<unknown>[] }).dataLayer ?? []).map((entry) => Array.from(entry)));
+    expect(commands.filter(([command]) => command === 'config')).toEqual([['config', 'G-TEST123456', expect.objectContaining({ page_path: guide.route, page_title: guide.title, page_location: 'https://calc.bongworks.co.kr' + guide.route })]]);
+    expect(JSON.stringify(commands)).not.toMatch(/987654321|income|email|private|secret/);
+  }
 });
 
 test('configured production queues one view before asynchronous GA loading without query values', async ({ page, request }) => {

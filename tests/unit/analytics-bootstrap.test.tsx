@@ -5,8 +5,20 @@ import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 import { getGaMeasurementId } from '@/lib/analytics/config';
 import { trackCalculatorEvent } from '@/lib/analytics/events';
 import RootLayout from '@/app/layout';
+import { decisionGuides, guideIndexPage } from '@/content/decision-guides';
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+it.each([guideIndexPage, ...decisionGuides].map(({ route, title }) => [route, title]))('records %s as the guide visited without leaking query or fragment data', (pathname, title) => {
+  const html = renderToStaticMarkup(<GoogleAnalytics measurementId="G-TEST123456" siteOrigin="https://calc.bongworks.co.kr" />);
+  const script = html.match(/<script id="ga-bootstrap">([\s\S]*?)<\/script>/)?.[1];
+  const win = { location: { pathname, search: '?income=987654321&email=private@example.com', hash: '#secret' }, dataLayer: [] as unknown[] };
+  runInNewContext(script!, { window: win, document: { referrer: '' }, URL, URLSearchParams, Date });
+  const calls = win.dataLayer.map((entry) => Array.from(entry as ArrayLike<unknown>));
+  const config = calls.find(([command]) => command === 'config')?.[2];
+  expect(config).toMatchObject({ page_path: pathname, page_title: title, page_location: 'https://calc.bongworks.co.kr' + pathname });
+  expect(JSON.stringify(calls)).not.toMatch(/987654321|income|email|private|secret/);
+});
 
 it.each([
   ['?utm_source=naver&utm_medium=cpc&utm_campaign=autumn-2026&utm_content=card_a&income=987654321&email=private@example.com', { campaign_source: 'naver', campaign_medium: 'cpc', campaign_name: 'autumn-2026', campaign_content: 'card_a' }],

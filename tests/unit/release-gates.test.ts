@@ -68,6 +68,12 @@ const html = `<html lang="ko"><head><title>${page.title}</title><meta name="desc
 describe('static output gate', () => {
   const fixtures: string[] = [];
   afterEach(() => fixtures.splice(0).forEach((directory) => rmSync(directory, { recursive: true, force: true })));
+  it('rejects a broken in-page guide navigation target', () => {
+    const broken = html.replace('</body>', '<a href="#missing-section">본문 이동</a></body>');
+    expect(validateStaticPage(broken, page, false)).toContain(`${page.route}: missing fragment target #missing-section`);
+    const valid = html.replace('</body>', '<a href="#example">예시 이동</a><section id="example">예시</section></body>');
+    expect(validateStaticPage(valid, page, false)).toEqual([]);
+  });
   it('accepts canonical static HTML, and rejects noindex, query canonical and missing JSON-LD', () => {
     expect(validateStaticPage(html, page, false)).toEqual([]);
     expect(validateStaticPage(html.replace('</head>', '<meta name="robots" content="noindex"></head>'), page, false)).toContain(`${page.route}: noindex is forbidden`);
