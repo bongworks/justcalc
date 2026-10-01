@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { calculators } from '../../content/calculators';
 import { calculatorCategories } from '../../lib/calculators/categories';
+import { decisionGuides, guideIndexPage } from '../../content/decision-guides';
 
 const origin = 'https://calc.bongworks.co.kr';
 const policyRoutes = ['/about/', '/editorial-policy/', '/contact/', '/privacy/', '/terms/'];
@@ -33,6 +34,8 @@ test('robots and sitemap include every registered public URL', async ({ request 
     [
       '/',
       ...policyRoutes,
+      guideIndexPage.route,
+      ...decisionGuides.map((entry) => entry.route),
       ...calculatorCategories.map((entry) => entry.route),
       ...calculators.map((entry) => entry.route),
     ].map((path) => origin + path).sort(),

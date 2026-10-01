@@ -218,19 +218,18 @@ test('calculator workspace uses a responsive form-first grid', async ({ page, is
 });
 
 for (const { route: path, slug } of calculatorDefinitions) {
-  test(`${slug} maintains a category banner and form-first responsive layout`, async ({ page, isMobile }) => {
+  test(`${slug} maintains a clear introduction and form-first responsive layout`, async ({ page, isMobile }) => {
     await page.goto(path);
-    const banner = page.locator('.calculator-category-banner');
-    await expect(banner).toBeVisible();
-    const bannerBox = await banner.boundingBox();
+    const heading = page.locator('.calculator-heading');
+    await expect(heading).toBeVisible();
+    const headingBox = await heading.boundingBox();
     const workspace = await page.locator('.calculator-workspace-grid').boundingBox();
     const form = await page.locator('.calculator-form').boundingBox();
     const result = await page.locator('.result-panel').boundingBox();
-    expect(bannerBox && workspace && form && result).toBeTruthy();
-    if (!bannerBox || !workspace || !form || !result) throw new Error(`Missing calculator layout on ${path}`);
+    expect(headingBox && workspace && form && result).toBeTruthy();
+    if (!headingBox || !workspace || !form || !result) throw new Error(`Missing calculator layout on ${path}`);
 
-    expect(workspace.y - (bannerBox.y + bannerBox.height)).toBeGreaterThanOrEqual(16);
-    expect(bannerBox.width).toBeCloseTo(workspace.width, 0);
+    expect(workspace.y - (headingBox.y + headingBox.height)).toBeGreaterThanOrEqual(16);
     if (isMobile) {
       expect(form.y + form.height).toBeLessThan(result.y);
       expect(form.x).toBeCloseTo(result.x, 0);

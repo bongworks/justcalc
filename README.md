@@ -27,7 +27,11 @@ pnpm check:static
 pnpm test:e2e
 ```
 
-`pnpm build`는 홈 1개, 카테고리 허브 8개, 계산기 78개, 정책 페이지 5개로 총 92개의 canonical HTML 페이지와 `404.html`, `robots.txt`, `sitemap.xml`, favicon·OG 이미지 및 참조된 정적 자산을 `out/`에 생성합니다. 배포 대상은 `out/` 전체이며 Next 서버, API, 데이터베이스가 필요하지 않습니다. `pnpm start`는 현재 `out/`을 Python 정적 서버로 제공하며, 빌드 후 [http://127.0.0.1:3000](http://127.0.0.1:3000)에서 미리 볼 수 있습니다. E2E는 개발 서버를 재사용하지 않고 이 정적 산출물을 사용합니다.
+`pnpm build`는 홈 1개, 카테고리 허브 8개, 계산기 78개, 정책 페이지 5개, 활용 가이드 목록 1개와 가이드 10개로 총 103개의 canonical HTML 페이지와 `404.html`, `robots.txt`, `sitemap.xml`, favicon·OG 이미지 및 참조된 정적 자산을 `out/`에 생성합니다. 배포 대상은 `out/` 전체이며 Next 서버, API, 데이터베이스가 필요하지 않습니다. `pnpm start`는 현재 `out/`을 Python 정적 서버로 제공하며, 빌드 후 [http://127.0.0.1:3000](http://127.0.0.1:3000)에서 미리 볼 수 있습니다. E2E는 개발 서버를 재사용하지 않고 이 정적 산출물을 사용합니다.
+
+## 계산 활용 콘텐츠
+
+`content/decision-guides.ts`는 자동차·대출·저축·할인 글과 `content/additional-decision-guides.ts`의 전월세·이사·마진·손익분기점·통신비·날짜 글의 비교 가정, 표, 체크리스트와 출처를 관리합니다. `content/calculator-insights.ts`는 핵심 계산기 10개의 입력 준비·결과 해석을, `content/category-guidance.ts`는 카테고리별 계산 순서를 제공합니다. `content/calculator-worked-examples.ts`는 전월세·이사·마진·손익분기점·통신비·더치페이 계산기 6개에 상황별 사례를 제공합니다. 가이드와 계산기는 정적 링크로 연결되며 계산값은 전달하지 않습니다. 개선 근거와 이후 운영 확인은 [콘텐츠 품질 개선 분석](docs/adsense-content-improvement.md)과 [경쟁 사이트 비교 및 후속 확장](docs/calculator-content-benchmark.md)을 참고하세요.
 
 `pnpm test:e2e:ui`는 Playwright UI 모드로 E2E를 실행합니다. GA4 전용 합성-ID 검증은 [분석 및 검색 연결 가이드](docs/analytics-and-search.md)의 순서대로 `pnpm test:e2e:analytics`를 실행합니다. 품질 게이트는 카탈로그 필수 콘텐츠, 입력·결과의 URL/저장소/네트워크/GA 유출 경계, 모든 공개 페이지의 HTML·사이트맵·canonical·색인 설정·자산 누락, 페이지별 gzip JS 300 KiB / CSS 30 KiB 예산을 검사합니다. 출시는 별도의 [출시 체크리스트](docs/release-checklist.md)를 모두 충족해야 합니다.
 

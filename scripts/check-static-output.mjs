@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { calculators } from '../content/calculators.ts';
+import { decisionGuides, guideIndexPage } from '../content/decision-guides.ts';
 import { calculatorCategories } from '../lib/calculators/categories.ts';
 import { homePage, policyPages, productionOrigin } from '../lib/seo/site.ts';
 
@@ -67,6 +68,10 @@ export function validateStaticPage(html, page, gaEnabled, adSenseEnabled = false
     meta.content.toLowerCase().split(/[\s,;]+/).some((directive) => ['noindex', 'none'].includes(directive))
   )) fail('noindex is forbidden');
   if (!doc.title || !doc.querySelector('meta[name="description"]')?.content || !doc.querySelector('h1')) fail('title, description and rendered h1 are required');
+  for (const link of doc.querySelectorAll('a[href^="#"]')) {
+    const href = link.getAttribute('href');
+    if (href.length > 1 && !doc.getElementById(href.slice(1))) fail(`missing fragment target ${href}`);
+  }
   const data = [...doc.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
     try { const item = JSON.parse(script.textContent); return Array.isArray(item) ? item : [item]; } catch { fail('invalid JSON-LD'); return []; }
   });
@@ -89,7 +94,7 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false,
   for (const artifact of ['api', 'server.js', '.next', 'node_modules']) {
     if (existsSync(resolve(directory, artifact))) errors.push(`server artifact is forbidden: ${artifact}`);
   }
-  const pages = [homePage, ...policyPages, ...calculatorCategories, ...calculators];
+  const pages = [homePage, ...policyPages, guideIndexPage, ...decisionGuides, ...calculatorCategories, ...calculators];
   const categoryRoutes = new Set(calculatorCategories.map(({ route }) => route));
   let maxJs = 0;
   let maxCss = 0;
@@ -99,6 +104,11 @@ export function checkStaticOutput(directory = resolve('out'), gaEnabled = false,
     const html = readFileSync(file, 'utf8');
     errors.push(...validateStaticPage(html, page, gaEnabled, adSenseEnabled, !categoryRoutes.has(page.route)));
     const doc = new JSDOM(html).window.document;
+    for (const link of doc.querySelectorAll('a[href^="/"]')) {
+      const href = link.getAttribute('href');
+      const path = href.split(/[?#]/)[0];
+      if (!existsSync(resolve(directory, `.${path}`, path.endsWith('/') ? 'index.html' : ''))) errors.push(`${page.route}: broken internal link ${href}`);
+    }
     for (const [selector, attribute, budget] of [['script[src]', 'src', 300 * 1024], ['link[rel="stylesheet"]', 'href', 30 * 1024]]) {
       const assets = new Set([...doc.querySelectorAll(selector)].map((item) => item.getAttribute(attribute)).filter((url) => url.startsWith('/')));
       let total = 0;
@@ -138,5 +148,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const result = checkStaticOutput(resolve('out'), gaEnabled, adSenseEnabled);
   result.errors.forEach((error) => console.error(error));
   if (result.errors.length) process.exitCode = 1;
-  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (${calculators.length} calculators, ${calculatorCategories.length} category hubs, ${policyPages.length} policy pages, home), robots/sitemap/assets; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
+  else console.log(`Static export OK: ${result.pageCount} canonical HTML pages (${calculators.length} calculators, ${calculatorCategories.length} category hubs, ${policyPages.length} policy pages, ${decisionGuides.length} guides and guide index, home), robots/sitemap/assets/links; max gzip JS ${result.maxJs} B / CSS ${result.maxCss} B; GA ${gaEnabled ? 'permitted' : 'absent'}; AdSense ${adSenseEnabled ? 'permitted' : 'absent'}.`);
 }
