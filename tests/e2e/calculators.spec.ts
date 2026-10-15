@@ -65,7 +65,7 @@ for (const calculator of calculatorDefinitions) {
 
 test('date, course list and random choice inputs calculate and reset locally', async ({ page }) => {
   await page.goto('/life/date-offset/');
-  await page.getByLabel('기준 날짜').fill('2024-03-01');
+  await page.getByRole('textbox', { name: '기준 날짜', exact: true }).fill('2024-03-01');
   await page.getByRole('textbox', { name: '더하거나 뺄 일수', exact: true }).fill('-1');
   await page.getByRole('button', { name: '계산하기' }).click();
   await expect(page.locator('.result-panel')).toContainText('2024-02-29');
@@ -87,15 +87,15 @@ test('date, course list and random choice inputs calculate and reset locally', a
 
 test('finance card instalment shows the equal-payment schedule and uses changed inputs', async ({ page }) => {
   await page.goto('/finance/card-instalment/');
-  await page.getByLabel('할부 원금').fill('1200000');
-  await page.getByLabel('연 이자율').fill('0');
-  await page.getByLabel('상환 기간').fill('12');
+  await page.getByRole('textbox', { name: '할부 원금', exact: true }).fill('1200000');
+  await page.getByRole('textbox', { name: '연 할부 수수료율', exact: true }).fill('0');
+  await page.getByRole('textbox', { name: '상환 기간', exact: true }).fill('12');
   await page.getByRole('button', { name: '계산하기' }).click();
-  const schedule = page.getByRole('table', { name: '원리금균등 월별 상환 일정', exact: true });
+  const schedule = page.getByRole('table', { name: '카드 할부 월별 상환 일정', exact: true });
   await expect(schedule.locator('tbody tr')).toHaveCount(12);
   await expect(schedule.locator('tbody tr').last().locator('td').last()).toHaveText('₩0');
   await expect(page.locator('.result-panel')).toContainText('₩100,000');
-  await page.getByLabel('할부 원금').fill('2400000');
+  await page.getByRole('textbox', { name: '할부 원금', exact: true }).fill('2400000');
   await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '계산하기' }).click();
   await expect(page.locator('.result-panel')).toContainText('₩200,000');
@@ -104,12 +104,12 @@ test('finance card instalment shows the equal-payment schedule and uses changed 
 test('finance manual exchange explains non-real-time values and clears stale output', async ({ page }) => {
   await page.goto('/finance/manual-exchange-rate/');
   await expect(page.locator('main')).toContainText('실시간 환율이 아닙니다');
-  await page.getByLabel('외화 금액').fill('100.5');
-  await page.getByLabel('외화 1단위당 원화 환율').fill('1300.5');
+  await page.getByRole('textbox', { name: '외화 금액', exact: true }).fill('100.5');
+  await page.getByRole('textbox', { name: '외화 1단위당 원화 환율', exact: true }).fill('1300.5');
   await page.getByRole('button', { name: '계산하기' }).click();
   await expect(page.locator('.result-panel')).toContainText('₩130,700');
   await expect(page.locator('.result-panel')).toContainText('실시간 환율이 아닙니다');
-  await page.getByLabel('외화 1단위당 원화 환율').fill('1000');
+  await page.getByRole('textbox', { name: '외화 1단위당 원화 환율', exact: true }).fill('1000');
   await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '계산하기' }).click();
   await expect(page.locator('.result-panel')).toContainText('₩100,500');
@@ -117,13 +117,13 @@ test('finance manual exchange explains non-real-time values and clears stale out
 
 test('fuel cost uses inputs and clears stale results on changes and reset', async ({ page }) => {
   await page.goto('/car/fuel-cost/');
-  await page.getByLabel('주행거리').fill('420');
+  await page.getByRole('textbox', { name: '주행거리', exact: true }).fill('420');
   await page.getByRole('textbox', { name: '연비', exact: true }).fill('14');
-  await page.getByLabel('유종 단가').fill('1700');
+  await page.getByRole('textbox', { name: '유종 단가', exact: true }).fill('1700');
   await page.getByRole('button', { name: '계산하기' }).click();
   await expect(page.getByText('예상 유류비', { exact: true })).toBeVisible();
   await expect(page.getByText('₩51,000', { exact: true })).toBeVisible();
-  await page.getByLabel('주행거리').fill('100');
+  await page.getByRole('textbox', { name: '주행거리', exact: true }).fill('100');
   await expect(page.getByRole('heading', { name: '계산 결과', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '계산하기' }).click();
   await page.getByRole('button', { name: '초기화' }).click();
@@ -133,9 +133,9 @@ test('fuel cost uses inputs and clears stale results on changes and reset', asyn
 
 test('loan comparison displays all three plans with zero final balances', async ({ page }) => {
   await page.goto('/finance/loan-repayment/');
-  await page.getByLabel('대출 원금').fill('12000000');
-  await page.getByLabel('연 이자율').fill('6');
-  await page.getByLabel('상환 기간').fill('12');
+  await page.getByRole('textbox', { name: '대출 원금', exact: true }).fill('12000000');
+  await page.getByRole('textbox', { name: '연 이자율', exact: true }).fill('6');
+  await page.getByRole('textbox', { name: '상환 기간', exact: true }).fill('12');
   await page.getByRole('button', { name: '계산하기' }).click();
   for (const name of ['원리금균등', '원금균등', '만기일시']) {
     const table = page.getByRole('table', { name: `${name} 월별 상환 일정`, exact: true });
@@ -174,7 +174,7 @@ test('page sharing copies only the calculator base URL', async ({ page, baseURL 
     } } });
   });
   await page.goto('/car/fuel-cost/?private=123456');
-  await page.getByLabel('주행거리').fill('987654');
+  await page.getByRole('textbox', { name: '주행거리', exact: true }).fill('987654');
   await page.getByRole('button', { name: '페이지 링크 복사' }).click();
   expect(await page.evaluate(() => (window as Window & { copiedText?: string }).copiedText)).toBe(new URL('/car/fuel-cost/', baseURL).href);
 });
@@ -244,7 +244,7 @@ for (const { route: path, slug } of calculatorDefinitions) {
 
 test('keyboard alone reaches the form and completes a calculation', async ({ page }) => {
   await page.goto('/car/fuel-cost/');
-  const distance = page.getByLabel('주행거리');
+  const distance = page.getByRole('textbox', { name: '주행거리', exact: true });
   for (let step = 0; step < 25 && !(await distance.evaluate((element) => element === document.activeElement)); step++) {
     await page.keyboard.press('Tab');
   }

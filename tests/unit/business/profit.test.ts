@@ -53,9 +53,16 @@ describe('business profit', () => {
     expect(calculateMarkup(input)).toEqual({ profitWon: d(-20000), percent: d(-20) });
   });
 
-  it('returns zero percentages when their denominators are zero', () => {
-    expect(calculateMargin({ salesWon: d(0), costWon: d(100000) }).percent).toEqual(d(0));
-    expect(calculateMarkup({ salesWon: d(100000), costWon: d(0) }).percent).toEqual(d(0));
+  it('preserves profit while marking percentages with zero denominators unavailable', () => {
+    expect(calculateMargin({ salesWon: d(0), costWon: d(100000) })).toEqual({ profitWon: d(-100000), percent: null });
+    expect(calculateMarkup({ salesWon: d(100000), costWon: d(0) })).toEqual({ profitWon: d(100000), percent: null });
+    expect(calculateMargin({ salesWon: d(0), costWon: d(0) }).percent).toBeNull();
+    expect(calculateMarkup({ salesWon: d(0), costWon: d(0) }).percent).toBeNull();
+  });
+
+  it('returns a genuine zero margin and markup when positive revenue equals costs', () => {
+    expect(calculateMargin({ salesWon: d(100000), costWon: d(100000) }).percent).toEqual(d(0));
+    expect(calculateMarkup({ salesWon: d(100000), costWon: d(100000) }).percent).toEqual(d(0));
   });
 
   const settlementInput = { grossSalesWon: d(100000), platformFeePercent: d('5.5'), paymentFeePercent: d('2.5'), shippingWon: d(3000) };

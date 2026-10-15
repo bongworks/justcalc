@@ -148,7 +148,7 @@ it.each([
 });
 
 it.each([
-  ['savings-maturity', { monthlyContribution: '100000', annualRatePercent: '12', months: '2', taxRatePercent: '10' }, '₩200,900'],
+  ['savings-maturity', { monthlyContribution: '100000', annualRatePercent: '12', months: '2', taxRatePercent: '10' }, '₩202,700'],
   ['deposit-interest', { principal: '1000000', annualRatePercent: '6', months: '12', taxRatePercent: '10' }, '₩1,054,000'],
   ['loan-affordability', { netMonthlyIncomeWon: '3000000', existingMonthlyDebtWon: '200000', allowedDebtRatioPercent: '20', annualRatePercent: '0', months: '12' }, '₩4,800,000'],
   ['dsr', { annualIncomeWon: '60000000', annualDebtPaymentsWon: '12000000' }, '20%'],
@@ -159,21 +159,21 @@ it.each([
   expect(getCalculatorBySlug(slug)!.evaluate(input).summary.value).toBe(value);
 });
 
-it('renders card instalment with the existing equal-payment monthly schedule', () => {
+it('renders card instalment with an equal-principal monthly schedule', () => {
   const result = getCalculatorBySlug('card-instalment')!.evaluate({ principal: '1200000', annualRatePercent: '0', months: '12' });
   expect(result.summary.value).toBe('₩100,000');
   expect(result.schedules).toHaveLength(1);
   expect(result.schedules![0].rows).toHaveLength(12);
   expect(result.schedules![0].rows.at(-1)!.balance.toString()).toBe('0');
-  expect(result.rows).toContainEqual({ label: '총이자', value: '₩0' });
+  expect(result.rows).toContainEqual({ label: '총 할부 수수료', value: '₩0' });
 });
 
 it.each(['dsr', 'dti', 'ltv'])('explains the undefined zero-base convention for %s', (slug) => {
   const definition = getCalculatorBySlug(slug)!;
   const raw = Object.fromEntries(definition.fields.map(({ name }) => [name, '0']));
   const result = definition.evaluate(raw);
-  expect(result.summary.value).toBe('0%');
-  expect(result.rows?.some(({ value }) => value.includes('0%'))).toBe(true);
+  expect(result.summary.value).toBe('계산 불가');
+  expect(result.rows?.some(({ value }) => value.includes('분모가 0원'))).toBe(true);
 });
 
 it.each([

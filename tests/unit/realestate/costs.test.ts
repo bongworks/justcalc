@@ -38,16 +38,20 @@ describe('property costs', () => {
     expect(calculateRentComparison({ depositWon: d(60000000), monthlyRentWon: d(500000), conversionRatePercent: d(4) }).monthlyEquivalentWon).toEqual(d(700000));
   });
 
-  it('rental yield is zero for zero purchase price', () => {
-    expect(calculateRentalYield({ annualRentWon: d(12000000), purchaseWon: d(0), annualCostsWon: d(0) }).percent).toEqual(d(0));
+  it('rental yield is unavailable for zero purchase price but preserves net rent', () => {
+    expect(calculateRentalYield({ annualRentWon: d(12000000), purchaseWon: d(0), annualCostsWon: d(0) })).toEqual({ netRentWon: d(12000000), percent: null });
   });
 
   it('deducts annual costs before calculating rental yield', () => {
     expect(calculateRentalYield({ annualRentWon: d(12000000), purchaseWon: d(200000000), annualCostsWon: d(2000000) }).percent).toEqual(d(5));
   });
 
-  it('floors rental yield at zero when costs exceed rent', () => {
-    expect(calculateRentalYield({ annualRentWon: d(1000000), purchaseWon: d(200000000), annualCostsWon: d(2000000) }).percent).toEqual(d(0));
+  it('preserves negative rental yield when costs exceed rent', () => {
+    expect(calculateRentalYield({ annualRentWon: d(1000000), purchaseWon: d(200000000), annualCostsWon: d(2000000) })).toEqual({ netRentWon: d(-1000000), percent: d('-0.5') });
+  });
+
+  it('distinguishes zero rental profit from an unavailable yield', () => {
+    expect(calculateRentalYield({ annualRentWon: d(1000000), purchaseWon: d(200000000), annualCostsWon: d(1000000) })).toEqual({ netRentWon: d(0), percent: d(0) });
   });
 
   it.each([calculateMovingBudget, calculateSetupBudget])('sums named budget items without mutating them', (calculate) => {

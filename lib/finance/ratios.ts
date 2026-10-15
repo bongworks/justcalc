@@ -8,6 +8,7 @@ export interface DsrInput {
 export interface DtiInput {
   annualIncomeWon: Decimal;
   annualHousingDebtPaymentsWon: Decimal;
+  annualOtherDebtInterestWon?: Decimal;
 }
 
 export interface LtvInput {
@@ -16,7 +17,7 @@ export interface LtvInput {
 }
 
 export interface RatioResult {
-  percent: Decimal;
+  percent: Decimal | null;
 }
 
 export interface CurrencyConversionInput {
@@ -29,8 +30,8 @@ export interface CurrencyConversionResult {
 }
 
 function percentage(numerator: Decimal, denominator: Decimal): RatioResult {
-  // A zero base has no meaningful ratio; return the product contract's neutral value.
-  return { percent: denominator.isZero() ? new Decimal(0) : numerator.div(denominator).mul(100) };
+  // An unavailable ratio must remain distinct from a genuine zero percent.
+  return { percent: denominator.isZero() ? null : numerator.div(denominator).mul(100) };
 }
 
 export function calculateDsr(input: DsrInput): RatioResult {
@@ -38,7 +39,8 @@ export function calculateDsr(input: DsrInput): RatioResult {
 }
 
 export function calculateDti(input: DtiInput): RatioResult {
-  return percentage(input.annualHousingDebtPaymentsWon, input.annualIncomeWon);
+  const annualDebtPaymentsWon = input.annualHousingDebtPaymentsWon.add(input.annualOtherDebtInterestWon ?? 0);
+  return percentage(annualDebtPaymentsWon, input.annualIncomeWon);
 }
 
 export function calculateLtv(input: LtvInput): RatioResult {

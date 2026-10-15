@@ -3,6 +3,7 @@
 import Decimal from 'decimal.js';
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { CalculatorEvaluationError } from '@/lib/calculators/errors';
+import { addMoneyInput, formatKoreanMoney, formatMoneyInput, moneyQuickAdditions } from '@/lib/calculators/input-format';
 
 const subscribe = () => () => {};
 const clientReady = () => true;
@@ -15,6 +16,7 @@ interface BaseField {
   defaultValue?: string;
   hint?: string;
   visibleWhen?: { field: string; value: string };
+  quickValues?: ReadonlyArray<{ label: string; value: string }>;
 }
 
 export type CalculatorField = BaseField & (
@@ -106,8 +108,13 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
         {visibleFields.map((field) => {
           const fieldId = `${id}-${field.name}`;
           const unit = field.type !== 'select' ? field.unit : undefined;
-          const describedBy = [unit && `${fieldId}-unit`, field.hint && `${fieldId}-hint`, errors[field.name] && `${fieldId}-error`].filter(Boolean).join(' ') || undefined;
-          const attributes = { id: fieldId, name: field.name, required: field.required, value: values[field.name] ?? '', 'aria-invalid': errors[field.name] ? true as const : undefined, 'aria-describedby': describedBy };
+          const raw = values[field.name] ?? '';
+          const isMoney = unit === '원' && (field.type === undefined || field.type === 'number');
+          const amount = isMoney && !fieldError(field, raw) ? formatKoreanMoney(raw) : undefined;
+          const quickValues = field.type !== 'select' ? field.quickValues : undefined;
+          const additions = isMoney && !quickValues ? moneyQuickAdditions(field.defaultValue ?? '') : [];
+          const describedBy = [unit && `${fieldId}-unit`, amount && `${fieldId}-amount`, field.hint && `${fieldId}-hint`, errors[field.name] && `${fieldId}-error`].filter(Boolean).join(' ') || undefined;
+          const attributes = { id: fieldId, name: field.name, required: field.required, value: raw, 'aria-invalid': errors[field.name] ? true as const : undefined, 'aria-describedby': describedBy };
           return (
             <div className="calculator-field" key={field.name}>
               <label htmlFor={fieldId}>{field.label}{field.required && <span className="required-label" aria-hidden="true">필수</span>}</label>
@@ -117,9 +124,22 @@ export function CalculatorForm({ fields, onCalculate, onReset, onValuesChange }:
                     <option value="">선택해 주세요</option>
                     {field.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                ) : <input {...attributes} type={field.type === 'date' ? 'date' : 'text'} inputMode={field.type === 'text' || field.type === 'date' ? undefined : 'decimal'} spellCheck={false} onChange={(event) => change(field.name, event.target.value)} />}
+                ) : <input {...attributes} type={field.type === 'date' ? 'date' : 'text'} inputMode={field.type === 'text' || field.type === 'date' ? undefined : 'decimal'} spellCheck={false} onChange={(event) => change(field.name, event.target.value)} onBlur={() => {
+                  if (!isMoney || fieldError(field, raw)) return;
+                  const formatted = formatMoneyInput(raw);
+                  if (formatted !== raw) setValues((previous) => ({ ...previous, [field.name]: formatted }));
+                }} />}
                 {unit && <span className="field-unit" id={`${fieldId}-unit`}>{unit}</span>}
               </div>
+              {amount && <p className="field-amount" id={`${fieldId}-amount`}>{amount}</p>}
+              {(quickValues?.length || additions.length) ? <div className="field-quick-values" role="group" aria-label={`${field.label} 빠른 입력`}>
+                {quickValues?.map((option) => <button className="field-quick-button" key={option.value} type="button" aria-label={`${field.label} ${option.label} 입력`} disabled={Boolean(fieldError(field, option.value))} onClick={() => change(field.name, isMoney ? formatMoneyInput(option.value) : option.value)}>{option.label}</button>)}
+                {additions.map((option) => {
+                  const nextValue = raw.trim() && fieldError(field, raw) ? undefined : addMoneyInput(raw, option.value);
+                  const disabled = nextValue === undefined || Boolean(fieldError(field, nextValue));
+                  return <button className="field-quick-button" key={option.value} type="button" aria-label={`${field.label} ${option.label} 더하기`} disabled={disabled} onClick={() => { if (!disabled && nextValue !== undefined) change(field.name, nextValue); }}>+{option.label}</button>;
+                })}
+              </div> : null}
               {field.hint && <p className="field-hint" id={`${fieldId}-hint`}>{field.hint}</p>}
               {errors[field.name] && <p className="field-error" id={`${fieldId}-error`}>{errors[field.name]}</p>}
             </div>

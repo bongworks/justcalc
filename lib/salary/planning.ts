@@ -12,16 +12,13 @@ export function calculateSalaryNegotiation(input: { currentAnnualWon: Decimal; d
   };
 }
 
-/**
- * User-defined expense-adjusted scenario; not a determination of statutory withholding.
- * Ordinary business-income withholding often applies to gross receipts: enter zero expenses
- * for that scenario. Net receipt subtracts withholding only, not the entered expenses.
- */
+// Business-income withholding uses gross receipts; expenses affect available cash separately.
 export function calculateFreelancerWithholding(input: { grossWon: Decimal; withholdingRatePercent: Decimal; deductibleExpenseWon: Decimal }) {
   const gross = amount(input.grossWon, '총 수입');
   const expense = amount(input.deductibleExpenseWon, '차감 경비');
   const rate = percent(input.withholdingRatePercent, '원천징수율');
-  const taxableBaseWon = SalaryDecimal.max(gross.minus(expense), 0);
+  const taxableBaseWon = gross;
   const withholdingWon = taxableBaseWon.mul(rate).div(100);
-  return { taxableBaseWon, withholdingWon, netReceiptWon: gross.minus(withholdingWon) };
+  const netReceiptWon = gross.minus(withholdingWon);
+  return { taxableBaseWon, withholdingWon, netReceiptWon, netAfterExpensesWon: netReceiptWon.minus(expense) };
 }

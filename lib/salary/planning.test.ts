@@ -15,15 +15,25 @@ test('negotiation provides the monthly change', () => {
   expect(calculateSalaryNegotiation({ currentAnnualWon: d(36000000), desiredAnnualWon: d(48000000) }).monthlyIncreaseWon).toEqual(d(1000000));
 });
 
-test('freelancer withholding never uses a negative taxable base', () => {
-  expect(calculateFreelancerWithholding({ grossWon: d(100000), deductibleExpenseWon: d(200000), withholdingRatePercent: d('3.3') }).withholdingWon).toEqual(d(0));
+test('expenses above revenue do not reduce withholding and preserve a cash shortfall', () => {
+  const result = calculateFreelancerWithholding({ grossWon: d(100000), deductibleExpenseWon: d(200000), withholdingRatePercent: d('3.3') });
+  expect(result.withholdingWon).toEqual(d(3300));
+  expect(result.netAfterExpensesWon).toEqual(d(-103300));
 });
 
-test('explicit expense-adjusted withholding rate yields tax and gross less withholding', () => {
+test('withholds from gross receipts and deducts expenses separately', () => {
   const result = calculateFreelancerWithholding({ grossWon: d(1000000), deductibleExpenseWon: d(100000), withholdingRatePercent: d('3.3') });
-  expect(result.taxableBaseWon).toEqual(d(900000));
-  expect(result.withholdingWon).toEqual(d(29700));
-  expect(result.netReceiptWon).toEqual(d(970300));
+  expect(result.taxableBaseWon).toEqual(d(1000000));
+  expect(result.withholdingWon).toEqual(d(33000));
+  expect(result.netReceiptWon).toEqual(d(967000));
+  expect(result.netAfterExpensesWon).toEqual(d(867000));
+});
+
+test('zero receipts with expenses has zero withholding and negative available cash', () => {
+  const result = calculateFreelancerWithholding({ grossWon: d(0), deductibleExpenseWon: d(100000), withholdingRatePercent: d('3.3') });
+  expect(result.withholdingWon).toEqual(d(0));
+  expect(result.netReceiptWon).toEqual(d(0));
+  expect(result.netAfterExpensesWon).toEqual(d(-100000));
 });
 
 test('decimal arithmetic retains fractional won without premature rounding', () => {
