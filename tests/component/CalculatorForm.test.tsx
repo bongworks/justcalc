@@ -1,9 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it, vi } from 'vitest';
-import { CalculatorForm } from '@/components/calculator/CalculatorForm';
+import { CalculatorForm, type CalculatorField } from '@/components/calculator/CalculatorForm';
+import { parseMoney } from '@/lib/calculators/validation';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const fields = [{ name: 'distanceKm', label: '주행거리', unit: 'km', required: true }] as const;
@@ -95,4 +96,101 @@ it('shows calculation failures as local form errors without exposing raw excepti
   await user.click(screen.getByRole('button', { name: '계산하기' }));
   expect(screen.getByRole('alert')).toHaveTextContent('입력값을 확인해 주세요.');
   expect(screen.queryByText('private raw value')).not.toBeInTheDocument();
+});
+
+it('describes large money amounts without reformatting while typing or invalidating a result on blur', async () => {
+  const user = userEvent.setup();
+  const onCalculate = vi.fn();
+  const onValuesChange = vi.fn();
+  render(<CalculatorForm fields={[{ name: 'amount', label: '대출 원금', unit: '원', defaultValue: '12000000' }]} onCalculate={onCalculate} onValuesChange={onValuesChange} />);
+  const input = screen.getByRole('textbox', { name: '대출 원금' });
+  expect(input).toHaveValue('12000000');
+  expect(input).toHaveAccessibleDescription('원 1,200만 원');
+  fireEvent.change(input, { target: { value: '123456789012345' } });
+  expect(input).toHaveValue('123456789012345');
+  expect(input).toHaveAccessibleDescription('원 123조 4,567억 8,901만 2,345원');
+  fireEvent.blur(input);
+  expect(input).toHaveValue('123,456,789,012,345');
+  expect(onValuesChange).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole('button', { name: '계산하기' }));
+  expect(onCalculate).toHaveBeenCalledWith({ amount: '123,456,789,012,345' });
+});
+
+it('adds money to an empty field, invalidates the previous result, and restores its default on reset', async () => {
+  const user = userEvent.setup();
+  const onCalculate = vi.fn();
+  const onValuesChange = vi.fn();
+  const onReset = vi.fn();
+  render(<CalculatorForm fields={[{ name: 'amount', label: '저축액', unit: '원' }]} onCalculate={onCalculate} onValuesChange={onValuesChange} onReset={onReset} />);
+  await user.click(screen.getByRole('button', { name: '저축액 1만원 더하기' }));
+  expect(screen.getByRole('textbox')).toHaveValue('10,000');
+  expect(screen.getByRole('textbox')).toHaveAccessibleDescription('원 1만 원');
+  expect(onValuesChange).toHaveBeenCalledOnce();
+  expect(onCalculate).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: '초기화' }));
+  expect(screen.getByRole('textbox')).toHaveValue('');
+  expect(screen.getByRole('textbox')).toHaveAccessibleDescription('원');
+  expect(onReset).toHaveBeenCalledOnce();
+});
+
+it.each(['abc', '-100', '1.5', 'Infinity', '1e1000000000'])('preserves invalid money %s and disables additive shortcuts', async (raw) => {
+  const user = userEvent.setup();
+  const onValuesChange = vi.fn();
+  render(<CalculatorForm fields={[{ name: 'amount', label: '금액', unit: '원' }]} onCalculate={() => {}} onValuesChange={onValuesChange} />);
+  const input = screen.getByRole('textbox');
+  fireEvent.change(input, { target: { value: raw } });
+  fireEvent.blur(input);
+  expect(input).toHaveValue(raw);
+  expect(input).toHaveAccessibleDescription('원');
+  const add = screen.getByRole('button', { name: '금액 1만원 더하기' });
+  expect(add).toBeDisabled();
+  await user.click(add);
+  expect(input).toHaveValue(raw);
+  expect(onValuesChange).toHaveBeenCalledOnce();
+});
+
+it('disables additions that exceed field validation without replacing the entered value', async () => {
+  const user = userEvent.setup();
+  const onValuesChange = vi.fn();
+  render(<CalculatorForm fields={[{ name: 'amount', label: '예산', unit: '원', defaultValue: '995000', validate: (raw) => parseMoney(raw).gt(1000000) ? '최대 1,000,000원' : undefined }]} onCalculate={() => {}} onValuesChange={onValuesChange} />);
+  const add = screen.getByRole('button', { name: '예산 1만원 더하기' });
+  expect(add).toBeDisabled();
+  await user.click(add);
+  expect(screen.getByRole('textbox')).toHaveValue('995000');
+  expect(onValuesChange).not.toHaveBeenCalled();
+});
+
+it('uses declared quick values to replace a field while preserving hidden defaults and reset behavior', async () => {
+  const user = userEvent.setup();
+  const onCalculate = vi.fn();
+  const onValuesChange = vi.fn();
+  const quickFields: CalculatorField[] = [
+    { name: 'months', label: '저축 기간', unit: '개월', defaultValue: '12', quickValues: [{ label: '24개월', value: '24' }] },
+    { name: 'hidden', label: '추가 금액', unit: '원', defaultValue: '500', visibleWhen: { field: 'months', value: '36' } },
+  ];
+  render(<CalculatorForm fields={quickFields} onCalculate={onCalculate} onValuesChange={onValuesChange} />);
+  await user.click(screen.getByRole('button', { name: '저축 기간 24개월 입력' }));
+  expect(screen.getByRole('textbox', { name: '저축 기간' })).toHaveValue('24');
+  expect(onValuesChange).toHaveBeenCalledOnce();
+  expect(onCalculate).not.toHaveBeenCalled();
+  expect(screen.queryByRole('textbox', { name: '추가 금액' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '계산하기' }));
+  expect(onCalculate).toHaveBeenCalledWith({ months: '24', hidden: '500' });
+  await user.click(screen.getByRole('button', { name: '초기화' }));
+  expect(screen.getByRole('textbox', { name: '저축 기간' })).toHaveValue('12');
+});
+
+it('keeps quick inputs disabled in server-rendered HTML until event handlers are ready', () => {
+  const html = renderToStaticMarkup(<CalculatorForm fields={[{ name: 'amount', label: '금액', unit: '원' }]} onCalculate={() => {}} />);
+  render(<div dangerouslySetInnerHTML={{ __html: html }} />);
+  expect(screen.getByRole('button', { name: '금액 1만원 더하기' })).toBeDisabled();
+});
+
+it('offers stable larger increments for fields with defaults of at least one hundred million won', async () => {
+  const user = userEvent.setup();
+  render(<CalculatorForm fields={[{ name: 'amount', label: '주택 가격', unit: '원', defaultValue: '100000000' }]} onCalculate={() => {}} />);
+  await user.click(screen.getByRole('button', { name: '주택 가격 1억원 더하기' }));
+  expect(screen.getByRole('textbox')).toHaveValue('200,000,000');
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '0' } });
+  expect(screen.getByRole('button', { name: '주택 가격 1억원 더하기' })).toBeEnabled();
 });

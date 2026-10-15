@@ -199,3 +199,25 @@ h2 { color: var(--navy); font-size: clamp(1.25rem, 2.5vw, 1.5rem); font-weight: 
   .form-actions > button { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+
+/* Keep adjustments and comparisons beside the values they explain. */
+.field-amount { margin: 8px 0 0; color: var(--accent); font-size: 14px; font-weight: 700; }
+.field-quick-values, .result-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.field-quick-button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); color: var(--navy); font-size: 13px; cursor: pointer; }
+.field-quick-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--blue-tint); }
+.field-quick-button:disabled { opacity: .45; cursor: not-allowed; }
+.result-conditions { margin: 16px 0; font-size: 14px; }
+.result-conditions summary { padding-block: 12px; cursor: pointer; font-weight: 700; }
+.result-conditions dl { display: grid; gap: 8px; margin: 8px 0; }
+.result-conditions dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.result-conditions dd { margin: 0; overflow-wrap: anywhere; }
+.result-actions { margin-bottom: 20px; }
+.result-comparison { min-width: 0; padding: clamp(16px, 3vw, 28px); margin-block: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.result-comparison > p { margin-top: 16px; color: var(--muted); font-size: 14px; }
+.comparison-scroll table { min-width: 520px; table-layout: fixed; }
+.comparison-scroll th, .comparison-scroll td { white-space: normal; overflow-wrap: anywhere; text-align: left; vertical-align: top; }
+.comparison-changed { background: var(--blue-tint); }
+.comparison-badge { display: inline-block; margin-left: 6px; padding: 2px 5px; border-radius: 4px; background: #dce8ff; color: #1948b3; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.repayment-table .table-scroll, .schedule-scroll { max-height: 360px; overflow-y: auto; }
+.repayment-table .table-scroll thead th, .schedule-scroll thead th { position: sticky; top: 0; z-index: 2; background: var(--blue-tint); }
+.repayment-table .table-scroll thead th:first-child { z-index: 3; }

@@ -31,6 +31,7 @@ type Raw = Record<string, string>;
 export interface DisplayResult extends CalculatorResult {
   schedules?: ReadonlyArray<{ title: string; rows: ReadonlyArray<RepaymentRow> }>;
   savingsRows?: ReadonlyArray<CompoundSavingsRow>;
+  savingsCaption?: string;
 }
 export interface RegisteredCalculator extends CalculatorCatalogEntry {
   fields: ReadonlyArray<CalculatorField>;
@@ -76,7 +77,8 @@ function choice<T extends string>(raw: string, choices: readonly T[]): T {
   return raw as T;
 }
 const annualRate = number('annualRatePercent', '연 이자율', '%', '6', rate, '0~100%');
-const repaymentMonths = number('months', '상환 기간', '개월', '12', months, '1~1,200개월, 정수');
+const repaymentMonths: CalculatorField = { ...number('months', '상환 기간', '개월', '12', months, '1~1,200개월, 정수'), quickValues: [{ label: '1년', value: '12' }, { label: '2년', value: '24' }, { label: '3년', value: '36' }, { label: '5년', value: '60' }] };
+const gracePeriod = number('graceMonths', '거치 기간', '개월', '0', (raw) => wholeCount(raw, 0, 1199), '전체 상환 기간에 포함 · 이자만 납입하는 기간');
 const modes = [{ value: 'equalPayment', label: '원리금균등' }, { value: 'equalPrincipal', label: '원금균등' }, { value: 'bullet', label: '만기일시' }] as const;
 const won = (label: string, value: Decimal.Value): ResultValue => ({ label, value: formatWon(value) });
 const loanInput = (raw: Raw) => ({ principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months) });
@@ -84,7 +86,7 @@ const reviewedYear = { label: '기준연도', value: '2026년 · 검토일 2026-
 const benefitRows = (assumption: string): ReadonlyArray<ResultValue> => [reviewedYear, { label: '계산 가정', value: assumption }, { label: '실제 지급·수급 자격', value: '근로·고용보험·휴직 등 실제 요건은 별도 확인' }];
 const manualRate = (name: string, label: string) => number(name, label, '%', '', rate, '수동 설정 · 0~100%');
 const manualMoney = (name: string, label: string) => number(name, label, '원', '', money, '수동 설정 · 0원 이상');
-const formattedPercentValue = (value: Decimal.Value) => `${formatNumber(value).replace(/(?:\.0+|(?:(\.\d*?)0+))$/, '$1')}%`;
+const formattedPercentValue = (value: Decimal.Value | null) => value === null ? '계산 불가' : `${formatNumber(value).replace(/(?:\.0+|(?:(\.\d*?)0+))$/, '$1')}%`;
 
 function define<I, O>(slug: typeof calculators[number]['slug'], fields: ReadonlyArray<CalculatorField>, parse: (raw: Raw) => I, calculate: (input: I) => O, present: (output: O) => DisplayResult): RegisteredCalculator & CalculatorDefinition<I, O> {
   const entry = calculators.find((calculator) => calculator.slug === slug)!;
@@ -133,8 +135,13 @@ const installment = define('installment', [number('principal', '할부 원금', 
   (input) => ({ plans: calculateRepaymentPlans(input), mode: input.mode }),
   ({ plans, mode }) => presentPlan(plans[mode], modes.find((option) => option.value === mode)!.label));
 
-const comparison = define('loan-repayment', [number('principal', '대출 원금', '원', '12000000'), annualRate, repaymentMonths], loanInput, calculateRepaymentPlans,
-  (plans) => ({ summary: { label: '상환 방식 비교', value: '세 가지 상환 방식' }, rows: modes.flatMap(({ value, label }) => { const plan = plans[value]; return [won(`${label} 첫 달 납입액`, plan.rows[0].payment), won(`${label} 마지막 달 납입액`, plan.rows.at(-1)!.payment), won(`${label} 총이자`, plan.totalInterest), won(`${label} 총 납입액`, plan.totalPaid)]; }), schedules: modes.map(({ value, label }) => ({ title: label, rows: plans[value].rows })) }));
+const comparison = define('loan-repayment', [number('principal', '대출 원금', '원', '12000000'), annualRate, { ...repaymentMonths, hint: '거치기간을 포함한 전체 기간', quickValues: [{ label: '1년', value: '12' }, { label: '5년', value: '60' }, { label: '10년', value: '120' }, { label: '30년', value: '360' }] }, gracePeriod],
+  (raw) => ({ ...loanInput(raw), graceMonths: wholeCount(raw.graceMonths ?? '0', 0, 1199) }),
+  (input) => ({ plans: calculateRepaymentPlans(input), graceMonths: input.graceMonths }),
+  ({ plans, graceMonths }) => ({ summary: won('만기일시 대비 원금균등 이자 절감액', plans.bullet.totalInterest.minus(plans.equalPrincipal.totalInterest)), rows: [
+    { label: '계산 가정', value: `고정금리 · 전체 기간 중 거치 ${graceMonths}개월 · 거치 중 이자만 납입` },
+    ...modes.flatMap(({ value, label }) => { const plan = plans[value]; return [won(`${label} 첫 달 납입액`, plan.rows[0].payment), ...(graceMonths ? [won(`${label} 거치 후 첫 납입액`, plan.rows[graceMonths].payment)] : []), won(`${label} 마지막 달 납입액`, plan.rows.at(-1)!.payment), won(`${label} 총이자`, plan.totalInterest), won(`${label} 총 납입액`, plan.totalPaid)]; }),
+  ], schedules: modes.map(({ value, label }) => ({ title: label, rows: plans[value].rows })) }));
 
 const interest = define('loan-interest', [number('principal', '대출 원금', '원', '10000000'), annualRate, number('period', '이용 기간', '', '12', positive, '0 초과'), select('periodUnit', '기간 단위', [{ value: 'days', label: '일' }, { value: 'months', label: '개월' }, { value: 'years', label: '년' }], 'months'), { ...select('daysInYear', '연 기준 일수', [{ value: '365', label: '365일' }, { value: '366', label: '366일' }], '365'), visibleWhen: { field: 'periodUnit', value: 'days' } }],
   (raw): SimpleInterestInput => {
@@ -143,9 +150,11 @@ const interest = define('loan-interest', [number('principal', '대출 원금', '
     return periodUnit === 'days' ? { ...base, periodUnit, daysInYear: choice(raw.daysInYear, ['365', '366']) === '365' ? 365 : 366 } : { ...base, periodUnit };
   }, calculateSimpleInterest, (result) => ({ summary: won('단리 기준 예상 이자', result.interest), rows: [won('원금 포함 만기 예상액', result.maturityAmount)] }));
 
-const compound = define('compound-interest', [number('initialPrincipal', '초기 원금', '원', '1000000'), number('monthlyContribution', '매월 납입액', '원', '100000'), { ...annualRate, defaultValue: '3' }, number('months', '기간', '개월', '12', months, '1~1,200개월, 정수'), select('compounding', '이자 계산 주기', [{ value: 'monthly', label: '월 복리 · 매월 말 납입' }], 'monthly'), { ...number('taxRatePercent', '세율', '%', '', rate, '선택 입력 · 0~100% · 공란이면 세전 결과만 표시'), required: false }],
-  (raw) => { choice(raw.compounding, ['monthly']); return { initialPrincipal: money(raw.initialPrincipal), monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: raw.taxRatePercent?.trim() ? rate(raw.taxRatePercent) : undefined }; }, calculateCompoundSavings,
-  (result) => ({ summary: won('세전 만기 예상액', result.maturityAmount), rows: [won('총 납입원금', result.totalPaid), won('세전 예상 이자', result.totalInterest), ...(result.afterTaxMaturityAmount === undefined ? [] : [won('세후 만기 예상액', result.afterTaxMaturityAmount), won('세후 예상 이자', result.afterTaxInterest!)]), { label: '계산 가정', value: '월 복리 · 매월 말 납입' }], savingsRows: result.rows }));
+const contributionOptions = [{ value: 'beginning', label: '매월 초 납입' }, { value: 'end', label: '매월 말 납입' }];
+const timingLabel = (timing: string | undefined) => timing === 'beginning' ? '매월 초 납입' : '매월 말 납입';
+const compound = define('compound-interest', [number('initialPrincipal', '초기 원금', '원', '1000000'), number('monthlyContribution', '매월 납입액', '원', '100000'), { ...annualRate, defaultValue: '3' }, number('months', '기간', '개월', '12', months, '1~1,200개월, 정수'), select('contributionTiming', '납입 시점', contributionOptions, 'end'), { ...number('taxRatePercent', '세율', '%', '', rate, '선택 입력 · 공란이면 세전 결과만 표시 · 만기 이자에 적용'), required: false }],
+  (raw) => ({ initialPrincipal: money(raw.initialPrincipal), monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), contributionTiming: choice(raw.contributionTiming ?? 'end', ['beginning', 'end']), taxRatePercent: raw.taxRatePercent?.trim() ? rate(raw.taxRatePercent) : undefined }), calculateCompoundSavings,
+  (result) => ({ summary: won('세전 만기 예상액', result.maturityAmount), rows: [won('총 납입원금', result.totalPaid), won('세전 예상 이자', result.totalInterest), ...(result.afterTaxMaturityAmount === undefined ? [] : [won('세후 만기 예상액', result.afterTaxMaturityAmount), won('세후 예상 이자', result.afterTaxInterest!), won('입력 세율 기준 세금', result.tax!)]), { label: '계산 가정', value: `월 복리 · ${timingLabel(result.contributionTiming)} · ${result.tax === undefined ? '세전 결과 · 세금 미반영' : '만기 이자에 세율 적용'}` }], savingsRows: result.rows, savingsCaption: `월별 누적 추이 · 월 복리 · ${timingLabel(result.contributionTiming)} · 세전 잔액` }));
 
 const budget = define('monthly-budget', [number('incomeWon', '월 순수입', '원', '3000000'), number('housingWon', '주거비', '원', '600000'), number('carWon', '자동차비', '원', '300000', money, '자동차 유지비 계산 결과를 직접 입력'), number('foodWon', '식비', '원', '400000'), number('communicationsWon', '통신·구독비', '원', '100000'), number('healthWon', '보험·의료비', '원', '100000'), number('otherFixedWon', '기타 고정비', '원', '100000'), number('variableWon', '기타 변동비', '원', '200000'), number('savingsTargetWon', '목표 저축액', '원', '700000')],
   (raw) => ({ incomeWon: money(raw.incomeWon), housingWon: money(raw.housingWon), carWon: money(raw.carWon), foodWon: money(raw.foodWon), communicationsWon: money(raw.communicationsWon), healthWon: money(raw.healthWon), otherFixedWon: money(raw.otherFixedWon), variableWon: money(raw.variableWon), savingsTargetWon: money(raw.savingsTargetWon) }), calculateMonthlyBudget,
@@ -201,42 +210,49 @@ const negotiation = define('salary-negotiation', [number('currentAnnualWon', '�
 
 const freelancer = define('freelancer-withholding', [number('grossWon', '총 수입', '원', '1000000'), number('deductibleExpenseWon', '차감 경비', '원', '200000'), manualRate('withholdingRatePercent', '원천징수율')],
   (raw) => ({ grossWon: money(raw.grossWon), deductibleExpenseWon: money(raw.deductibleExpenseWon), withholdingRatePercent: rate(raw.withholdingRatePercent) }), calculateFreelancerWithholding,
-  (result) => ({ summary: won('원천징수 후 수령액', result.netReceiptWon), rows: [won('경비 차감 후 대상 시나리오', result.taxableBaseWon), won('원천징수 예상액', result.withholdingWon), { label: '계산 가정', value: '입력 경비를 뺀 금액에 수동 입력 세율을 적용한 시나리오' }] }));
+  (result) => ({ summary: won('원천징수 후 수령액', result.netReceiptWon), rows: [won('원천징수 대상 총수입', result.taxableBaseWon), won('원천징수 예상액', result.withholdingWon), won('경비 지출 후 남는 금액', result.netAfterExpensesWon), { label: '계산 가정', value: '총수입에 입력 세율 적용 · 경비는 원천징수와 별도 차감 · 종합소득세 확정액 아님' }] }));
 
-const savingsPeriod = number('months', '저축 기간', '개월', '12', months, '1~1,200개월, 정수');
+const savingsPeriod: CalculatorField = { ...number('months', '저축 기간', '개월', '12', months, '1~1,200개월, 정수'), quickValues: [{ label: '6개월', value: '6' }, { label: '1년', value: '12' }, { label: '2년', value: '24' }, { label: '3년', value: '36' }] };
+const interestTypeField = select('interestType', '이자 계산 방식', [{ value: 'simple', label: '단리' }, { value: 'monthly', label: '월 복리' }], 'simple');
 const taxRate = manualRate('taxRatePercent', '이자 세율');
 function presentSavings(result: SavingsInterestResult, assumption: string): DisplayResult {
   return { summary: won('세후 만기 예상액', result.afterTaxMaturityAmount), rows: [won('총 납입원금', result.totalPaid), won('세전 예상 이자', result.totalInterest), won('입력 세율 기준 세금', result.tax), won('세후 예상 이자', result.afterTaxInterest), won('세전 만기 예상액', result.maturityAmount), { label: '계산 가정', value: assumption }] };
 }
 
-const savingsMaturity = define('savings-maturity', [number('monthlyContribution', '매월 납입액', '원', '100000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, taxRate],
-  (raw) => ({ monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent) }), calculateSavingsMaturity,
-  (result) => presentSavings(result, '매월 말 납입 · 월 복리 · 세율 수동 입력'));
+const savingsMaturity = define('savings-maturity', [number('monthlyContribution', '매월 납입액', '원', '100000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, interestTypeField, select('contributionTiming', '납입 시점', contributionOptions, 'beginning'), taxRate],
+  (raw) => ({ monthlyContribution: money(raw.monthlyContribution), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent), interestType: choice(raw.interestType ?? 'simple', ['simple', 'monthly']), contributionTiming: choice(raw.contributionTiming ?? 'beginning', ['beginning', 'end']) }), calculateSavingsMaturity,
+  (result) => presentSavings(result, `${timingLabel(result.contributionTiming)} · ${result.interestType === 'simple' ? '단리' : '월 복리'} · 만기 이자에 입력 세율 적용`));
 
-const depositInterest = define('deposit-interest', [number('principal', '예치 원금', '원', '1000000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, taxRate],
-  (raw) => ({ principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent) }), calculateDepositInterest,
-  (result) => presentSavings(result, '단리 · 개월 수 기준 · 세율 수동 입력'));
+const depositInterest = define('deposit-interest', [number('principal', '예치 원금', '원', '1000000'), number('annualRatePercent', '연 이자율', '%', '3', rate, '0~100%'), savingsPeriod, interestTypeField, taxRate],
+  (raw) => ({ principal: money(raw.principal), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months), taxRatePercent: rate(raw.taxRatePercent), interestType: choice(raw.interestType ?? 'simple', ['simple', 'monthly']) }), calculateDepositInterest,
+  (result) => presentSavings(result, `${result.interestType === 'simple' ? '단리' : '월 복리'} · 개월 수 기준 · 만기 이자에 입력 세율 적용`));
 
 const affordability = define('loan-affordability', [number('netMonthlyIncomeWon', '월 순수입', '원', '3000000'), number('existingMonthlyDebtWon', '기존 월 원리금 상환액', '원', '200000'), manualRate('allowedDebtRatioPercent', '직접 정한 월 상환 허용비율'), annualRate, repaymentMonths],
   (raw) => ({ netMonthlyIncomeWon: money(raw.netMonthlyIncomeWon), existingMonthlyDebtWon: money(raw.existingMonthlyDebtWon), allowedDebtRatioPercent: rate(raw.allowedDebtRatioPercent), annualRatePercent: rate(raw.annualRatePercent), months: months(raw.months) }), calculateLoanAffordability,
   (result) => ({ summary: won('상환 여력 기준 추정 원금', result.affordablePrincipalWon), rows: [won('입력 비율 기준 월 상환 예산', result.maximumMonthlyDebtWon), won('추가 월 상환 여력', result.availableMonthlyPaymentWon), { label: '계산 가정', value: '수동 허용비율 · 고정금리 원리금균등 · 대출 승인·한도 예측 아님' }] }));
 
-const ratioRows: ReadonlyArray<ResultValue> = [{ label: '계산 범위', value: '입력값의 단순 비율이며 대출 승인·규제 충족을 판단하지 않습니다.' }, { label: '분모가 0원인 경우', value: '유효한 비율을 계산할 수 없어 편의상 0%로 표시합니다.' }];
+const ratioRows: ReadonlyArray<ResultValue> = [{ label: '계산 범위', value: '입력값의 단순 비율이며 대출 승인·규제 충족을 판단하지 않습니다.' }, { label: '분모가 0원인 경우', value: '분모가 0원이면 비율을 정의할 수 없어 계산 불가로 표시합니다.' }];
 const dsr = define('dsr', [number('annualIncomeWon', '연 소득', '원', '60000000'), number('annualDebtPaymentsWon', '연간 총 원리금 상환액', '원', '12000000')],
   (raw) => ({ annualIncomeWon: money(raw.annualIncomeWon), annualDebtPaymentsWon: money(raw.annualDebtPaymentsWon) }), calculateDsr,
   (result) => ({ summary: { label: '입력 기준 DSR', value: formattedPercentValue(result.percent) }, rows: ratioRows }));
 
-const dti = define('dti', [number('annualIncomeWon', '연 소득', '원', '60000000'), number('annualHousingDebtPaymentsWon', '주택부채 연간 상환액', '원', '9000000')],
-  (raw) => ({ annualIncomeWon: money(raw.annualIncomeWon), annualHousingDebtPaymentsWon: money(raw.annualHousingDebtPaymentsWon) }), calculateDti,
-  (result) => ({ summary: { label: '주택부채 기준 단순 DTI 비율', value: formattedPercentValue(result.percent) }, rows: [...ratioRows, { label: '산정 항목', value: '주택부채 상환액만 반영하며 기타 대출 이자는 별도 산정하지 않습니다.' }] }));
+const dti = define('dti', [number('annualIncomeWon', '연 소득', '원', '60000000'), number('annualHousingDebtPaymentsWon', '주택부채 연간 상환액', '원', '9000000'), number('annualOtherDebtInterestWon', '기타 대출 연간 이자', '원', '0')],
+  (raw) => ({ annualIncomeWon: money(raw.annualIncomeWon), annualHousingDebtPaymentsWon: money(raw.annualHousingDebtPaymentsWon), annualOtherDebtInterestWon: money(raw.annualOtherDebtInterestWon ?? '0') }), calculateDti,
+  (result) => ({ summary: { label: '입력 기준 DTI', value: formattedPercentValue(result.percent) }, rows: [...ratioRows, { label: '산정 항목', value: '주택부채 연간 원리금과 기타 대출 연간 이자 합계 ÷ 연 소득' }] }));
 
 const ltv = define('ltv', [number('loanWon', '대출 금액', '원', '300000000'), number('propertyValueWon', '담보 가치', '원', '500000000')],
   (raw) => ({ loanWon: money(raw.loanWon), propertyValueWon: money(raw.propertyValueWon) }), calculateLtv,
   (result) => ({ summary: { label: '입력 기준 LTV', value: formattedPercentValue(result.percent) }, rows: ratioRows }));
 
-const cardInstalment = define('card-instalment', [number('principal', '할부 원금', '원', '1200000'), annualRate, repaymentMonths], loanInput,
-  (input) => calculateRepaymentPlans(input).equalPayment,
-  (plan) => { const result = presentPlan(plan, '원리금균등'); return { ...result, rows: [...result.rows!, { label: '계산 가정', value: '원리금균등 계획표이며 실제 카드사의 수수료·청구 방식과 다를 수 있습니다.' }] }; });
+const cardInstalment = define('card-instalment', [number('principal', '할부 원금', '원', '1200000'), { ...annualRate, label: '연 할부 수수료율', required: false, hint: '유이자·부분 무이자 선택 시 필수 · 전액 무이자는 공란 가능' }, { ...repaymentMonths, hint: '전체 할부 개월 수', quickValues: [{ label: '3개월', value: '3' }, { label: '6개월', value: '6' }, { label: '12개월', value: '12' }, { label: '24개월', value: '24' }] }, select('feeMode', '수수료 부담 방식', [{ value: 'paid', label: '일반 유이자' }, { value: 'free', label: '전액 무이자' }, { value: 'partial', label: '부분 무이자 · 초기 회차 부담' }], 'paid'), { ...number('chargedMonths', '수수료 부담 회차', '회', '3', (raw) => wholeCount(raw, 1, 1200), '처음부터 입력한 회차까지만 수수료 부담'), visibleWhen: { field: 'feeMode', value: 'partial' } }],
+  (raw) => { const feeMode = choice(raw.feeMode ?? 'paid', ['paid', 'free', 'partial']); const input = loanInput({ ...raw, annualRatePercent: feeMode === 'free' ? '0' : raw.annualRatePercent }); const chargedMonths = feeMode === 'partial' ? wholeCount(raw.chargedMonths ?? '3', 1, 1200) : feeMode === 'paid' ? input.months : 0; if (chargedMonths > input.months) throw new Error('수수료 부담 회차는 전체 할부 개월 수 이하여야 합니다.'); return { ...input, chargedMonths }; },
+  (input) => {
+    const plan = calculateRepaymentPlans(input).equalPrincipal;
+    const rows = plan.rows.map((row) => { const interest = row.month <= input.chargedMonths ? row.interest : new Decimal(0); return { ...row, interest, payment: row.principal.add(interest) }; });
+    const totalInterest = rows.reduce((sum, row) => sum.add(row.interest), new Decimal(0));
+    return { rows, totalInterest, totalPaid: input.principal.add(totalInterest) };
+  },
+  (plan) => ({ summary: won('첫 달 예상 청구액', plan.rows[0].payment), rows: [won('마지막 달 예상 청구액', plan.rows.at(-1)!.payment), won('총 할부 수수료', plan.totalInterest), won('총 납입액', plan.totalPaid), { label: '계산 가정', value: '매월 같은 원금 + 남은 원금 × 연 수수료율 ÷ 12 · 실제 결제일별 일할 계산과 다를 수 있습니다.' }], schedules: [{ title: '카드 할부', rows: plan.rows }] }));
 
 const manualExchange = define('manual-exchange-rate', [number('amount', '외화 금액', '외화 단위', '100', nonnegative, '0 이상 · 소수 입력 가능'), number('wonPerUnit', '외화 1단위당 원화 환율', '원/외화 단위', '', positive, '수동 입력 · 실시간 환율이 아닙니다 · 0 초과 · 소수 입력 가능')],
   (raw) => ({ amount: nonnegative(raw.amount), wonPerUnit: positive(raw.wonPerUnit) }), convertCurrency,
@@ -275,7 +291,7 @@ const housingAffordability = define('housing-affordability', [number('cashWon', 
 
 const rentalYield = define('rental-yield', [number('annualRentWon', '연 임대료', '원', '12000000'), number('purchaseWon', '매입가', '원', '100000000'), number('annualCostsWon', '연 비용', '원', '2000000')],
   (raw) => ({ annualRentWon: money(raw.annualRentWon), purchaseWon: money(raw.purchaseWon), annualCostsWon: money(raw.annualCostsWon) }), calculateRentalYield,
-  (result) => ({ summary: { label: '입력 기준 임대 수익률', value: formattedPercentValue(result.percent) }, rows: [{ label: '0% 표시 기준', value: '순임대료가 음수이거나 매입가가 0원이면 편의상 0% · 손실률 미표시' }] }));
+  (result) => ({ summary: { label: '입력 기준 임대 수익률', value: formattedPercentValue(result.percent) }, rows: [won('연간 순임대수익', result.netRentWon), { label: '계산 기준', value: '손실은 음수 수익률로 표시 · 매입가 0원은 계산 불가 · 매매차익 제외' }] }));
 
 const vat = define('vat', [number('supplyWon', '계산 대상 금액', '원', '100000'), manualRate('ratePercent', '직접 확인한 부가세율'), select('includesVat', '입력 금액의 부가세 포함 여부', [{ value: 'no', label: '부가세 별도 공급가' }, { value: 'yes', label: '부가세 포함 합계' }], 'no')],
   (raw) => ({ supplyWon: money(raw.supplyWon), ratePercent: rate(raw.ratePercent), includesVat: choice(raw.includesVat, ['no', 'yes']) === 'yes' }), calculateVat,
@@ -284,9 +300,9 @@ const vat = define('vat', [number('supplyWon', '계산 대상 금액', '원', '1
 const profitFields = [number('salesWon', '매출', '원', '100000'), number('costWon', '원가', '원', '80000')];
 const parseProfit = (raw: Raw) => ({ salesWon: money(raw.salesWon), costWon: money(raw.costWon) });
 const margin = define('margin', profitFields, parseProfit, calculateMargin,
-  (result) => ({ summary: { label: '매출 기준 마진율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '매출 0원은 비율 계산이 불가능해 편의상 0%로 표시' }] }));
+  (result) => ({ summary: { label: '매출 기준 마진율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '매출이 0원이면 비율 계산 불가 · 이익·손실 금액은 별도 표시' }] }));
 const markup = define('markup', profitFields, parseProfit, calculateMarkup,
-  (result) => ({ summary: { label: '원가 기준 가산율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '원가 0원은 비율 계산이 불가능해 편의상 0%로 표시' }] }));
+  (result) => ({ summary: { label: '원가 기준 가산율', value: formattedPercentValue(result.percent) }, rows: [won('이익', result.profitWon), { label: '분모 0원', value: '원가가 0원이면 비율 계산 불가 · 이익·손실 금액은 별도 표시' }] }));
 
 const breakEven = define('break-even', [number('fixedCostWon', '기간 고정비', '원', '1000000'), number('unitPriceWon', '판매 단가', '원', '10000'), number('variableCostWon', '단위 변동비', '원', '6000')],
   (raw) => ({ fixedCostWon: money(raw.fixedCostWon), unitPriceWon: money(raw.unitPriceWon), variableCostWon: money(raw.variableCostWon) }), calculateBreakEven,

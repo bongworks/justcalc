@@ -1,8 +1,39 @@
 import Decimal from 'decimal.js';
 import { describe, expect, it } from 'vitest';
-import { calculateRepaymentPlans, calculateSimpleInterest } from '@/lib/finance/loan';
+import { calculateEqualPaymentLoan, calculateRepaymentPlans, calculateSimpleInterest } from '@/lib/finance/loan';
 
 describe('calculateRepaymentPlans', () => {
+  it('includes interest-only grace months before amortizing the principal', () => {
+    const plans = calculateRepaymentPlans({ principal: new Decimal(1200), annualRatePercent: new Decimal(12), months: 4, graceMonths: 2 });
+    expect(plans.equalPrincipal.rows.map((row) => row.payment.toString())).toEqual(['12', '12', '612', '606']);
+    expect(plans.equalPrincipal.firstPayment.toString()).toBe('12');
+    expect(plans.equalPrincipal.lastPayment.toString()).toBe('606');
+    expect(plans.equalPrincipal.totalInterest.toString()).toBe('42');
+    expect(plans.equalPayment.monthlyPayment.toFixed(8)).toBe('609.01492537');
+    expect(plans.equalPayment.totalInterest.toFixed(8)).toBe('42.02985075');
+    expect(plans.bullet.rows.map((row) => row.payment.toString())).toEqual(['12', '12', '12', '1212']);
+    for (const plan of [plans.equalPayment, plans.equalPrincipal, plans.bullet]) {
+      expect(plan.rows.map((row) => row.month)).toEqual([1, 2, 3, 4]);
+      expect(plan.rows.slice(0, 2).map((row) => row.balance.toString())).toEqual(['1200', '1200']);
+      expect(plan.rows.reduce((sum, row) => sum.add(row.principal), plan.totalPaid.mul(0)).toString()).toBe('1200');
+      expect(plan.rows.reduce((sum, row) => sum.add(row.payment), plan.totalPaid.mul(0)).eq(plan.totalPaid)).toBe(true);
+      expect(plan.rows.at(-1)?.balance.toString()).toBe('0');
+    }
+  });
+
+  it('keeps the regular zero-interest payment distinct from the grace payment', () => {
+    const plan = calculateEqualPaymentLoan({ principal: new Decimal(1200), annualRatePercent: new Decimal(0), months: 3, graceMonths: 2 });
+    expect(plan.rows.map((row) => row.payment.toString())).toEqual(['0', '0', '1200']);
+    expect(plan.monthlyPayment.toString()).toBe('1200');
+    expect(plan.totalInterest.toString()).toBe('0');
+  });
+
+  it.each([-1, 1.5, 4, 5, Infinity, NaN])('rejects invalid grace duration %s', (graceMonths) => {
+    const input = { principal: new Decimal(1200), annualRatePercent: new Decimal(12), months: 4, graceMonths };
+    expect(() => calculateRepaymentPlans(input)).toThrow();
+    expect(() => calculateEqualPaymentLoan(input)).toThrow();
+  });
+
   it('matches independent equal-principal and bullet totals at 50 percent for 1200 months', () => {
     const plans = calculateRepaymentPlans({ principal: new Decimal('12000000'), annualRatePercent: new Decimal(50), months: 1200 });
     // Equal principal: 500000 * (1200 + 1) / 2. Bullet: 500000 * 1200.

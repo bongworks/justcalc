@@ -20,7 +20,7 @@ export interface ProfitInput {
 
 export interface ProfitResult {
   profitWon: Decimal;
-  percent: Decimal;
+  percent: Decimal | null;
 }
 
 export interface BreakEvenInput {
@@ -67,7 +67,7 @@ export function calculateVat(input: VatInput): VatResult {
 
 function calculateProfitPercent(input: ProfitInput, denominator: Decimal): ProfitResult {
   const profitWon = input.salesWon.sub(input.costWon);
-  return { profitWon, percent: denominator.isZero() ? new Decimal(0) : profitWon.div(denominator).mul(100) };
+  return { profitWon, percent: denominator.isZero() ? null : profitWon.div(denominator).mul(100) };
 }
 
 export function calculateMargin(input: ProfitInput): ProfitResult {

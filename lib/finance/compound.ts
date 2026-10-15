@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import type { ContributionTiming } from './savings';
 
 export interface CompoundSavingsInput {
   initialPrincipal: Decimal;
@@ -6,6 +7,7 @@ export interface CompoundSavingsInput {
   annualRatePercent: Decimal;
   months: number;
   taxRatePercent?: Decimal;
+  contributionTiming?: ContributionTiming;
 }
 
 export interface CompoundSavingsRow {
@@ -16,12 +18,14 @@ export interface CompoundSavingsRow {
 }
 
 export interface CompoundSavingsResult {
+  contributionTiming: ContributionTiming;
   totalPaid: Decimal;
   totalInterest: Decimal;
   maturityAmount: Decimal;
   rows: CompoundSavingsRow[];
   afterTaxInterest?: Decimal;
   afterTaxMaturityAmount?: Decimal;
+  tax?: Decimal;
 }
 
 export function calculateCompoundSavings(input: CompoundSavingsInput): CompoundSavingsResult {
@@ -30,22 +34,25 @@ export function calculateCompoundSavings(input: CompoundSavingsInput): CompoundS
   }
 
   const monthlyRate = input.annualRatePercent.div(100).div(12);
+  const contributionTiming = input.contributionTiming ?? 'end';
   const rows: CompoundSavingsRow[] = [];
   let balance = input.initialPrincipal;
 
   for (let month = 1; month <= input.months; month += 1) {
-    // Monthly compounding: interest accrues on the opening balance, then the contribution is deposited.
+    if (contributionTiming === 'beginning') balance = balance.add(input.monthlyContribution);
     const interest = balance.mul(monthlyRate);
-    balance = balance.add(interest).add(input.monthlyContribution);
+    balance = balance.add(interest);
+    if (contributionTiming === 'end') balance = balance.add(input.monthlyContribution);
     rows.push({ month, contribution: input.monthlyContribution, interest, balance });
   }
 
   const totalPaid = input.initialPrincipal.add(input.monthlyContribution.mul(input.months));
   const totalInterest = balance.minus(totalPaid);
-  const result: CompoundSavingsResult = { totalPaid, totalInterest, maturityAmount: balance, rows };
+  const result: CompoundSavingsResult = { totalPaid, totalInterest, maturityAmount: balance, rows, contributionTiming };
 
   if (input.taxRatePercent !== undefined) {
-    result.afterTaxInterest = totalInterest.mul(new Decimal(1).minus(input.taxRatePercent.div(100)));
+    result.tax = totalInterest.mul(input.taxRatePercent).div(100);
+    result.afterTaxInterest = totalInterest.minus(result.tax);
     result.afterTaxMaturityAmount = totalPaid.add(result.afterTaxInterest);
   }
 

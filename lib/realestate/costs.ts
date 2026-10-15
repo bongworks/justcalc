@@ -56,9 +56,9 @@ export function calculateRentComparison(input: RentComparisonInput): { monthlyEq
   return { monthlyEquivalentWon: input.monthlyRentWon.add(rentWon) };
 }
 
-export function calculateRentalYield(input: RentalYieldInput): { percent: Decimal } {
-  const netRentWon = Decimal.max(input.annualRentWon.sub(input.annualCostsWon), 0);
-  return { percent: input.purchaseWon.isZero() ? new Decimal(0) : netRentWon.div(input.purchaseWon).mul(100) };
+export function calculateRentalYield(input: RentalYieldInput): { netRentWon: Decimal; percent: Decimal | null } {
+  const netRentWon = input.annualRentWon.sub(input.annualCostsWon);
+  return { netRentWon, percent: input.purchaseWon.isZero() ? null : netRentWon.div(input.purchaseWon).mul(100) };
 }
 
 function sumBudget(input: ItemBudgetInput): { totalWon: Decimal } {

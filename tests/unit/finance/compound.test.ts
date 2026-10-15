@@ -5,6 +5,17 @@ import { calculateCompoundSavings } from '@/lib/finance/compound';
 const input = { initialPrincipal: new Decimal('1000000'), monthlyContribution: new Decimal('100000'), annualRatePercent: new Decimal(0), months: 12 };
 
 describe('calculateCompoundSavings', () => {
+  it('accrues interest on beginning contributions and exposes the resulting tax', () => {
+    const result = calculateCompoundSavings({ initialPrincipal: new Decimal(1000), monthlyContribution: new Decimal(100), annualRatePercent: new Decimal(12), months: 2, contributionTiming: 'beginning', taxRatePercent: new Decimal(10) });
+    expect(result.rows.map((row) => row.interest.toString())).toEqual(['11', '12.11']);
+    expect(result.rows.map((row) => row.balance.toString())).toEqual(['1111', '1223.11']);
+    expect(result.totalPaid.toString()).toBe('1200');
+    expect(result.totalInterest.toString()).toBe('23.11');
+    expect(result.tax?.toString()).toBe('2.311');
+    expect(result.afterTaxMaturityAmount?.toString()).toBe('1220.799');
+    expect(result.contributionTiming).toBe('beginning');
+  });
+
   it.each([0, -1, 1.5])('rejects invalid month count %s instead of producing an inconsistent schedule', (months) => {
     expect(() => calculateCompoundSavings({ ...input, months })).toThrow();
   });

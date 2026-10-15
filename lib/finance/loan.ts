@@ -12,6 +12,8 @@ export interface EqualPaymentLoanInput {
   principal: Decimal;
   annualRatePercent: Decimal;
   months: number;
+  /** Interest-only months included in the total term. */
+  graceMonths?: number;
 }
 
 export interface RepaymentRow {
@@ -76,8 +78,10 @@ export interface RepaymentPlansResult {
 export function calculateRepaymentPlans(input: EqualPaymentLoanInput): RepaymentPlansResult {
   input = financeInput(input);
   const equalPayment = calculateEqualPaymentLoan(input);
+  const graceMonths = input.graceMonths ?? 0;
+  const repaymentMonths = input.months - graceMonths;
   const monthlyRate = input.annualRatePercent.div(100).div(12);
-  const monthlyPrincipal = input.principal.div(input.months);
+  const monthlyPrincipal = input.principal.div(repaymentMonths);
   const monthlyInterestPayment = input.principal.mul(monthlyRate);
   const equalPrincipalRows: RepaymentRow[] = [];
   const bulletRows: RepaymentRow[] = [];
@@ -87,7 +91,7 @@ export function calculateRepaymentPlans(input: EqualPaymentLoanInput): Repayment
   for (let month = 1; month <= input.months; month += 1) {
     const isFinal = month === input.months;
     const interest = balance.mul(monthlyRate);
-    const principal = isFinal ? input.principal.minus(repaidPrincipal) : monthlyPrincipal;
+    const principal = month <= graceMonths ? new FinanceDecimal(0) : isFinal ? input.principal.minus(repaidPrincipal) : monthlyPrincipal;
     repaidPrincipal = repaidPrincipal.add(principal);
     balance = isFinal ? new FinanceDecimal(0) : input.principal.minus(repaidPrincipal);
     equalPrincipalRows.push({ month, principal, interest, payment: principal.add(interest), balance });
@@ -129,14 +133,19 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
   if (input.months <= 0 || !new Decimal(input.months).isInteger()) {
     throw new Error('상환 기간은 0보다 큰 정수여야 합니다.');
   }
+  const graceMonths = input.graceMonths ?? 0;
+  if (!Number.isInteger(graceMonths) || graceMonths < 0 || graceMonths >= input.months) {
+    throw new Error('거치 기간은 0 이상이며 전체 상환 기간보다 짧은 정수여야 합니다.');
+  }
+  const repaymentMonths = input.months - graceMonths;
 
   const monthlyRate = input.annualRatePercent.div(100).div(12);
   let monthlyPayment: Decimal;
 
   if (monthlyRate.isZero()) {
-    monthlyPayment = input.principal.div(input.months);
+    monthlyPayment = input.principal.div(repaymentMonths);
   } else {
-    const growthFactor = new FinanceDecimal(1).add(monthlyRate).pow(input.months);
+    const growthFactor = new FinanceDecimal(1).add(monthlyRate).pow(repaymentMonths);
     const denominator = growthFactor.minus(1);
 
     if (denominator.lte(0)) {
@@ -154,7 +163,9 @@ export function calculateEqualPaymentLoan(input: EqualPaymentLoanInput): EqualPa
     const interest = balance.mul(monthlyRate);
     // Reconcile against the original principal so repeated Decimal operations cannot accumulate drift.
     const principal =
-      month === input.months
+      month <= graceMonths
+        ? new FinanceDecimal(0)
+        : month === input.months
         ? input.principal.minus(repaidPrincipal)
         : monthlyPayment.minus(interest);
     const payment = principal.add(interest);
